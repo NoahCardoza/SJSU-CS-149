@@ -1,19 +1,6 @@
-//
-// Created by Vulcan on 10/30/23.
-//
-
 #include <stdio.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <stdbool.h>
-#include <assert.h>
-#include "program.h"
-#include "pcb.h"
-#include "cpu.h"
 #include "manager.h"
-#include "config.h"
-#include "queues.h"
-#include "scheduler.h"
 
 /**
  * This function is used to fork and pipe to the
@@ -38,6 +25,7 @@ int fork_and_pipe() {
         char buf[1024];
 
         while (1) {
+            // TODO: use get line and read at a rate of 1 line per second
             int n = read(0, buf, sizeof(buf));
             if (n < 0) {
                 perror("read");

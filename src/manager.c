@@ -4,12 +4,10 @@
 
 #include <stddef.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "manager.h"
 #include "cpu.h"
-#include "pcb.h"
 #include "scheduler.h"
 #include "../libs/zf_log/zf_log.h"
 
@@ -51,8 +49,11 @@ void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, sche
             ZF_LOGI("Blocking process.\n");
             cpu->program_counter++;
             context_switch_cpu_to_pcb(cpu, pcb_el->value);
+            if (pcb_el->value->priority > 0) {
+                pcb_el->value->priority--;
+            }
             scheduler_block_process(scheduler, pcb_el);
-
+            // TODO: upgrade priority
             pcb_el = scheduler_dequeue_process(scheduler);
             context_switch_pcb_to_cpu(cpu, pcb_el->value);
             break;
@@ -65,6 +66,8 @@ void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, sche
             break;
         case 'F': // fork
             ZF_LOGI("Forking process.\n");
+            // TODO: include current system time
+            // TODO: pass value of cpu state
             scheduler_process_init(
                     scheduler,
                     pcb_el->value->process_id,
@@ -73,21 +76,40 @@ void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, sche
                     );
             cpu->program_counter += read_int_param_from_line(instruction) + 1;
 
+
             break;
         case 'R': // load another process from a file
             str_param = read_str_param_from_line(instruction);
             ZF_LOGI("Loading another process from \"%s\".\n", str_param);
             free(cpu->program);
+            // TODO: ask "what does int undefined mean?"
             cpu->program = program_get(str_param);
             cpu->program_counter = 0;
-            break;
+            // TODO: run next command
+            execute_program_instruction(cpu, pcb_el, scheduler); // TODO: ask morty
+            return;
     }
-    cpu->used_time_slices++;
+    // TODO: increment machine time
+//    cpu->used_time_slices++;
+    //        cpu.time_slice
+//    cpu.used_time_slices++;
+    // TODO: preempt process when it runs out of time slices
+//        if (cpu.time_slice == cpu.used_time_slices) {
+//            cpu.time_slice = 0;
+//            cpu.used_time_slices = 0;
+//            context_switch_pcb_to_cpu(&cpu, current_process->value);
+//            scheduler_enqueue_process(&scheduler, current_process);
+//            current_process = scheduler_dequeue_process(&scheduler);
+//    if (pcb_el->value->priority < 0) {
+//        pcb_el->value->priority++;
+//    }
+//        }
 }
 
 void manger_run(int stdin_fd) {
     cpu_t cpu;
     scheduler_t scheduler;
+    int time = 0;
     struct pbc_queue_item *current_process = NULL;
     struct pbc_queue_item *unblocked_pcb_el = NULL;
 
@@ -123,6 +145,7 @@ void manger_run(int stdin_fd) {
                 printf("Not implemented.\n");
                 break;
             case 'T': // print the average turnaround time and terminate the system
+                // TODO: ask about storage of processes in pcb table
                 // On receiving a T command, the process
                 // manager first spawns a reporter process and then terminates after termination of the
                 // reporter process. The process manager ensures that no more than one reporter process is
@@ -133,16 +156,6 @@ void manger_run(int stdin_fd) {
                 printf("Invalid command.\n");
                 break;
         }
-
-        cpu.used_time_slices++;
-
-//        if (cpu.time_slice == cpu.used_time_slices) {
-//            cpu.time_slice = 0;
-//            cpu.used_time_slices = 0;
-//            context_switch_pcb_to_cpu(&cpu, current_process->value);
-//            scheduler_enqueue_process(&scheduler, current_process);
-//            current_process = scheduler_dequeue_process(&scheduler);
-//        }
     }
 
     free(line);

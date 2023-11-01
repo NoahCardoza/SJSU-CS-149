@@ -3,13 +3,6 @@
 //
 
 #include "pcb.h"
-#include "program.h"
-#include "manager.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include "cpu.h"
 #include "../libs/zf_log/zf_log.h"
 

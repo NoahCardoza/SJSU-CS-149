@@ -40,7 +40,18 @@ void scheduler_enqueue_process(scheduler_t *scheduler_queues, struct pbc_queue_i
  */
 struct pbc_queue_item * scheduler_dequeue_process(scheduler_t *scheduler_queues);
 
-void scheduler_block_process(scheduler_t *scheduler_queues, struct pbc_queue_item *pcb_el);
-struct pbc_queue_item * scheduler_unblock_process(scheduler_t *scheduler_queues);
+/**
+ * This function is used to block a process.
+ * @param scheduler
+ * @param pcb_el
+ */
+void scheduler_block_process(scheduler_t *scheduler, struct pbc_queue_item *pcb_el);
+
+/**
+ * This function is used to unblock a process.
+ * @param scheduler
+ * @return
+ */
+struct pbc_queue_item * scheduler_unblock_process(scheduler_t *scheduler);
 
 #endif //SJSU_CS_149_SCHEDULER_H

@@ -28,15 +28,16 @@ struct pbc_queue_item * scheduler_dequeue_process(scheduler_t *scheduler_queues)
     return NULL;
 }
 
-void scheduler_block_process(scheduler_t *scheduler_queues, struct pbc_queue_item *pcb_el) {
-    pbc_queue_enqueue(&scheduler_queues->blocked_queue_head, pcb_el);
+void scheduler_block_process(scheduler_t *scheduler, struct pbc_queue_item *pcb_el) {
+    pbc_queue_enqueue(&scheduler->blocked_queue_head, pcb_el);
 }
 
-struct pbc_queue_item * scheduler_unblock_process(scheduler_t *scheduler_queues) {
-    return pbc_queue_dequeue(&scheduler_queues->blocked_queue_head);
+struct pbc_queue_item * scheduler_unblock_process(scheduler_t *scheduler) {
+    return pbc_queue_dequeue(&scheduler->blocked_queue_head);
 }
 
 void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int program_counter) {
+    // TODO: init start time
     pcb_t *pcb = pcb_create(parent_pid, program, program_counter);
 
     struct pbc_queue_item *el = (struct pbc_queue_item *) malloc(sizeof(struct pbc_queue_item));
