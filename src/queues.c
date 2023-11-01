@@ -20,20 +20,21 @@ its allocated quantum expires, its priority is raised.
 #include "config.h"
 #include "queues.h"
 
-void pbc_queue_enqueue(struct pbc_queue_head *head, pcb_t *pcb) {
-    struct pbc_queue *el = (struct pbc_queue *) malloc(sizeof(struct pbc_queue));
+struct pbc_queue_item_item *pbc_queue_enqueue(struct pbc_queue_item_head *head, struct pbc_queue_item *pcb_el) {
+    struct pbc_queue_item_item *el = (struct pbc_queue_item_item *) malloc(sizeof(struct pbc_queue_item_item));
     if (el) {
-        el->value = pcb;
+        el->value = pcb_el;
     } else {
         perror("malloc");
         exit(1);
     }
     STAILQ_INSERT_TAIL(head, el, entries);
+    return el;
 }
 
-pcb_t *pbc_queue_dequeue(struct pbc_queue_head *head) {
-    pcb_t *pcb;
-    struct pbc_queue *el;
+struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head) {
+    struct pbc_queue_item *pcb_el;
+    struct pbc_queue_item_item *el;
     el = STAILQ_FIRST(head);
 
     if (el == NULL) {
@@ -41,7 +42,7 @@ pcb_t *pbc_queue_dequeue(struct pbc_queue_head *head) {
     }
 
     STAILQ_REMOVE_HEAD(head, entries);
-    pcb = el->value;
+    pcb_el = el->value;
     free(el);
-    return pcb;
+    return pcb_el;
 }

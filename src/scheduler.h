@@ -10,8 +10,9 @@
 #include "queues.h"
 
 typedef struct {
-    struct pbc_queue_head priority_queue_heads[PRIO_LEVELS];
-    struct pbc_queue_head blocked_queue_head;
+    struct pbc_queue_head pcb_table;
+    struct pbc_queue_item_head priority_queue_heads[PRIO_LEVELS];
+    struct pbc_queue_item_head blocked_queue_head;
 } scheduler_t;
 
 /**
@@ -20,12 +21,15 @@ typedef struct {
  */
 void scheduler_init(scheduler_t *scheduler_queues);
 
+void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int program_counter);
+void scheduler_process_free(scheduler_t *scheduler, struct pbc_queue_item *scheduled_pcb);
+
 /**
  * This function is used to enqueue a process into the scheduler queues.
  * @param scheduler_queues
  * @param pcb
  */
-void scheduler_enqueue_process(scheduler_t *scheduler_queues, pcb_t *pcb);
+void scheduler_enqueue_process(scheduler_t *scheduler_queues, struct pbc_queue_item * pcb_el);
 
 /**
  * This function is used to dequeue a process from the scheduler queues. It
@@ -34,9 +38,9 @@ void scheduler_enqueue_process(scheduler_t *scheduler_queues, pcb_t *pcb);
  * @param scheduler_queues
  * @return
  */
-pcb_t *scheduler_dequeue_process(scheduler_t *scheduler_queues);
+struct pbc_queue_item * scheduler_dequeue_process(scheduler_t *scheduler_queues);
 
-void scheduler_block_process(scheduler_t *scheduler_queues, pcb_t *pcb);
-pcb_t *scheduler_unblock_process(scheduler_t *scheduler_queues);
+void scheduler_block_process(scheduler_t *scheduler_queues, struct pbc_queue_item *pcb_el);
+struct pbc_queue_item * scheduler_unblock_process(scheduler_t *scheduler_queues);
 
 #endif //SJSU_CS_149_SCHEDULER_H

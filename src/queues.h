@@ -10,15 +10,22 @@
 #include <sys/queue.h>
 #include "pcb.h"
 
-struct pbc_queue {
+struct pbc_queue_item {
     pcb_t *value;
-    STAILQ_ENTRY(pbc_queue) entries;
+    STAILQ_ENTRY(pbc_queue_item) entries;
 };
 
-STAILQ_HEAD(pbc_queue_head, pbc_queue);
+STAILQ_HEAD(pbc_queue_head, pbc_queue_item);
 
-void pbc_queue_enqueue(struct pbc_queue_head *head, pcb_t *pcb);
+struct pbc_queue_item_item {
+    struct pbc_queue_item *value;
+    STAILQ_ENTRY(pbc_queue_item_item) entries;
+};
 
-pcb_t *pbc_queue_dequeue(struct pbc_queue_head *head);
+STAILQ_HEAD(pbc_queue_item_head, pbc_queue_item_item);
+
+struct pbc_queue_item_item *pbc_queue_enqueue(struct pbc_queue_item_head *head, struct pbc_queue_item *pcb_el);
+
+struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head);
 
 #endif //SJSU_CS_149_QUEUES_H

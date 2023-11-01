@@ -55,47 +55,7 @@ int fork_and_pipe() {
 int main(int argc, char **argv) {
 //    fork_and_pipe();
 
-//    manger_run(1);
-//
-//    program_t  *p = program_get("init");
-//    pcb_t *pcb = pcb_create(0, p, 0);
-//    cpu_t cpu;
-//
-//    context_switch_pcb_to_cpu(&cpu, pcb);
-//
-//    context_switch_cpu_to_pcb(&cpu, pcb);
-//
-//    for (int i = 0; i < p->count; i++) {
-//        printf("%s", p->lines[i]);
-//    }
-//    program_free(p);
-
-    scheduler_t scheduler;
-    scheduler_init(&scheduler);
-
-    pcb_t *p;
-    p = pcb_create(-1, program_get("init"), 0);
-    p->priority = 1;
-    printf("%d\n", p->process_id);
-    scheduler_enqueue_process(
-            &scheduler,
-            p
-    );
-    p = pcb_create(0, program_get("init1"), 0);
-    printf("%d\n", p->process_id);
-    p->priority = 0;
-    scheduler_enqueue_process(
-            &scheduler,
-            p
-    );
-
-    p = scheduler_dequeue_process(&scheduler);
-    assert(p != NULL);
-    printf("-- %d\n", p->process_id);
-
-    p = scheduler_dequeue_process(&scheduler);
-    assert(p != NULL);
-    printf("-- %d\n", p->process_id);
+    manger_run(0);
 
     return 0;
 }

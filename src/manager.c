@@ -6,9 +6,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "manager.h"
 #include "cpu.h"
 #include "pcb.h"
+#include "scheduler.h"
+#include "../libs/zf_log/zf_log.h"
 
 char* read_str_param_from_line(char *line) {
     return line + 2;
@@ -18,57 +21,128 @@ int read_int_param_from_line(char *line) {
     return atoi(read_str_param_from_line(line));
 }
 
-void execute_program_instruction(cpu_t cpu) {
-    char *instruction = cpu.program->lines[cpu.program_counter];
+void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, scheduler_t *scheduler) {
+    assert(pcb_el != NULL);
+    int int_param;
+    char *str_param;
+    char *instruction = cpu->program->lines[cpu->program_counter];
+    ZF_LOGI("Executing instruction: \"%s\".\n", instruction);
+
     switch (instruction[0]) {
         case 'S': // set
-            cpu.state = read_int_param_from_line(instruction);
-            cpu.program_counter++;
+            int_param = read_int_param_from_line(instruction);
+            ZF_LOGI("Setting CPU value to %d.\n", int_param);
+            cpu->state = int_param;
+            cpu->program_counter++;
             break;
         case 'A': // sdd
-            cpu.state += read_int_param_from_line(instruction);
-            cpu.program_counter++;
+            int_param = read_int_param_from_line(instruction);
+            ZF_LOGI("Adding %d to CPU value.\n", int_param);
+            cpu->state += int_param;
+            cpu->program_counter++;
             break;
         case 'D': // sub
-            cpu.state -= read_int_param_from_line(instruction);
-            cpu.program_counter++;
+            int_param = read_int_param_from_line(instruction);
+            ZF_LOGI("Subtracting %d from CPU value.\n", int_param);
+            cpu->state -= int_param;
+            cpu->program_counter++;
             break;
         case 'B': // block
+            ZF_LOGI("Blocking process.\n");
+            cpu->program_counter++;
+            context_switch_cpu_to_pcb(cpu, pcb_el->value);
+            scheduler_block_process(scheduler, pcb_el);
+
+            pcb_el = scheduler_dequeue_process(scheduler);
+            context_switch_pcb_to_cpu(cpu, pcb_el->value);
             break;
         case 'E': // terminate
+            ZF_LOGI("Terminating process.\n");
+            scheduler_process_free(scheduler, pcb_el);
+            pcb_el = scheduler_dequeue_process(scheduler);
+            assert(pcb_el != NULL);
+            context_switch_pcb_to_cpu(cpu, pcb_el->value);
             break;
         case 'F': // fork
-            break;
-        case 'R': // load another process from a file
+            ZF_LOGI("Forking process.\n");
+            scheduler_process_init(
+                    scheduler,
+                    pcb_el->value->process_id,
+                    program_copy(cpu->program),
+                    cpu->program_counter + 1
+                    );
+            cpu->program_counter += read_int_param_from_line(instruction) + 1;
 
             break;
+        case 'R': // load another process from a file
+            str_param = read_str_param_from_line(instruction);
+            ZF_LOGI("Loading another process from \"%s\".\n", str_param);
+            free(cpu->program);
+            cpu->program = program_get(str_param);
+            cpu->program_counter = 0;
+            break;
     }
+    cpu->used_time_slices++;
 }
 
 void manger_run(int stdin_fd) {
     cpu_t cpu;
-    pcb_t pcb_table[100];
-    pcb_t ready_queue[100];
-    pcb_t blocked_queue[100];
-    pcb_t *current_process = NULL;
+    scheduler_t scheduler;
+    struct pbc_queue_item *current_process = NULL;
+    struct pbc_queue_item *unblocked_pcb_el = NULL;
 
-    pcb_table[0] = *pcb_create(0, program_get("init"), 0);
+    scheduler_init(&scheduler);
+    scheduler_process_init(&scheduler, 0, program_get("init"), 0);
 
+    current_process = scheduler_dequeue_process(&scheduler);
+    context_switch_pcb_to_cpu(&cpu, current_process->value);
 
     char *line;
-    FILE *stdin = fdopen(stdin_fd, "r");
-    ssize_t n = 0;
+    size_t len = 32;
+    FILE *in = fdopen(stdin_fd, "r");
 
-    while (!feof(stdin)) {
-        getline((char **) line, (size_t *) sizeof(line), stdin);
-        write(1, line, n);
-
-
-        if (cpu.time_slice == cpu.used_time_slices) {
-            cpu.time_slice = 0;
-            cpu.used_time_slices = 0;
-            current_process = NULL;
+    while (!feof(in)) {
+        printf("Enter command: ");
+        getline(&line, &len, in);
+        printf("%s", line);
+        switch (line[0]) {
+            case 'Q': // end of one unit of time
+                execute_program_instruction(&cpu, current_process, &scheduler);
+                break;
+            case 'U': // unblock the first simulated process in blocked queue
+                unblocked_pcb_el = scheduler_unblock_process(&scheduler);
+                if (unblocked_pcb_el != NULL) {
+                    scheduler_enqueue_process(&scheduler, unblocked_pcb_el);
+                } else {
+                    printf("No process to unblock.\n");
+                }
+                break;
+            case 'P': // print the current state of the system
+                // On receiving a P command, the process
+                // manager spawns a new reporter process.
+                printf("Not implemented.\n");
+                break;
+            case 'T': // print the average turnaround time and terminate the system
+                // On receiving a T command, the process
+                // manager first spawns a reporter process and then terminates after termination of the
+                // reporter process. The process manager ensures that no more than one reporter process is
+                // running at any moment.
+                printf("Not implemented.\n");
+                break;
+            default:
+                printf("Invalid command.\n");
+                break;
         }
+
+        cpu.used_time_slices++;
+
+//        if (cpu.time_slice == cpu.used_time_slices) {
+//            cpu.time_slice = 0;
+//            cpu.used_time_slices = 0;
+//            context_switch_pcb_to_cpu(&cpu, current_process->value);
+//            scheduler_enqueue_process(&scheduler, current_process);
+//            current_process = scheduler_dequeue_process(&scheduler);
+//        }
     }
 
     free(line);
