@@ -9,4 +9,9 @@ add_executable(SJSU_CS_149
         src/manager.h
         src/program.c
         src/cpu.c
-        src/pcb.c)
+        src/pcb.c
+        src/queues.c
+        src/config.h
+        src/queues.h
+        "src/scheduler.c"
+        "src/scheduler.h")

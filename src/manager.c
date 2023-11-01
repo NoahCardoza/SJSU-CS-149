@@ -52,12 +52,15 @@ void manger_run(int stdin_fd) {
     pcb_t blocked_queue[100];
     pcb_t *current_process = NULL;
 
+    pcb_table[0] = *pcb_create(0, program_get("init"), 0);
 
-    char line[100];
+
+    char *line;
     FILE *stdin = fdopen(stdin_fd, "r");
     ssize_t n = 0;
 
-    while ((n = getline((char **) line, (size_t *) sizeof(line), stdin)) > 0) {
+    while (!feof(stdin)) {
+        getline((char **) line, (size_t *) sizeof(line), stdin);
         write(1, line, n);
 
 
@@ -67,4 +70,6 @@ void manger_run(int stdin_fd) {
             current_process = NULL;
         }
     }
+
+    free(line);
 }

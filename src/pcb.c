@@ -13,6 +13,7 @@
 
 pcb_t *pcb_create(int parent_process_id, program_t *program, int program_counter) {
     static int process_id_counter = 0;
+
     pcb_t *pcb = malloc(sizeof(pcb_t));
     if (pcb == NULL) {
         perror("malloc");

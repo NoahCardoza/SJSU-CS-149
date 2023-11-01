@@ -3,52 +3,99 @@
 //
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <assert.h>
 #include "program.h"
 #include "pcb.h"
 #include "cpu.h"
+#include "manager.h"
+#include "config.h"
+#include "queues.h"
+#include "scheduler.h"
 
+/**
+ * This function is used to fork and pipe to the
+ * manager process.
+ * @return
+ */
+int fork_and_pipe() {
+    int fd[2];
+
+    if (pipe(fd) < 0) {
+        perror("pipe");
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+    } else if (pid == 0) {
+        close(fd[0]);
+        manger_run(fd[1]);
+    } else {
+        close(fd[1]);
+        char buf[1024];
+
+        while (1) {
+            int n = read(0, buf, sizeof(buf));
+            if (n < 0) {
+                perror("read");
+            } else if (n == 0) {
+                break;
+            } else {
+                write(fd[1], buf, n);
+            }
+        }
+    }
+
+    return 0;
+}
 
 int main(int argc, char **argv) {
-//    int fd[2];
+//    fork_and_pipe();
+
+//    manger_run(1);
 //
-//    if (pipe(fd) < 0) {
-//        perror("pipe");
+//    program_t  *p = program_get("init");
+//    pcb_t *pcb = pcb_create(0, p, 0);
+//    cpu_t cpu;
+//
+//    context_switch_pcb_to_cpu(&cpu, pcb);
+//
+//    context_switch_cpu_to_pcb(&cpu, pcb);
+//
+//    for (int i = 0; i < p->count; i++) {
+//        printf("%s", p->lines[i]);
 //    }
-//
-//    pid_t pid = fork();
-//    if (pid < 0) {
-//        perror("fork");
-//    } else if (pid == 0) {
-//        close(fd[0]);
-//        manger_run(fd[1]);
-//    } else {
-//        close(fd[1]);
-//        char buf[1024];
-//
-//        while (1) {
-//            int n = read(0, buf, sizeof(buf));
-//            if (n < 0) {
-//                perror("read");
-//            } else if (n == 0) {
-//                break;
-//            } else {
-//                write(fd[1], buf, n);
-//            }
-//        }
-//    }
+//    program_free(p);
 
-    program_t  *p = program_get("init");
-    pcb_t *pcb = pcb_create(0, p, 0);
-    cpu_t cpu;
+    scheduler_t scheduler;
+    scheduler_init(&scheduler);
 
-    context_switch_pcb_to_cpu(&cpu, pcb);
+    pcb_t *p;
+    p = pcb_create(-1, program_get("init"), 0);
+    p->priority = 1;
+    printf("%d\n", p->process_id);
+    scheduler_enqueue_process(
+            &scheduler,
+            p
+    );
+    p = pcb_create(0, program_get("init1"), 0);
+    printf("%d\n", p->process_id);
+    p->priority = 0;
+    scheduler_enqueue_process(
+            &scheduler,
+            p
+    );
 
-    context_switch_cpu_to_pcb(&cpu, pcb);
+    p = scheduler_dequeue_process(&scheduler);
+    assert(p != NULL);
+    printf("-- %d\n", p->process_id);
 
-    for (int i = 0; i < p->count; i++) {
-        printf("%s", p->lines[i]);
-    }
-    program_free(p);
+    p = scheduler_dequeue_process(&scheduler);
+    assert(p != NULL);
+    printf("-- %d\n", p->process_id);
 
     return 0;
 }
