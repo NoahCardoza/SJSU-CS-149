@@ -11,6 +11,10 @@
 #include "scheduler.h"
 #include "../libs/zf_log/zf_log.h"
 
+#define ARRAY_SIZE 4
+
+int priorityArr[ARRAY_SIZE] = {1, 2, 4, 8};
+
 char* read_str_param_from_line(char *line) {
     return line + 2;
 }
@@ -18,8 +22,15 @@ char* read_str_param_from_line(char *line) {
 int read_int_param_from_line(char *line) {
     return atoi(read_str_param_from_line(line));
 }
+void check_time_slice(cpu_t *cpu, pcb_t *pcb){//added - R
+    if (ARRAY_SIZE > pcb->priority && cpu.time_slice == cpu.used_time_slices ) {//check if priority > 3
+        cpu.time_slice = priorityArr[(pcb->priority + 1)];
+        context_switch_cpu_to_pcb(cpu, pcb);
+    }
 
-void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, scheduler_t *scheduler) {
+}
+//added time - R
+void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, scheduler_t *scheduler, int time) {
     assert(pcb_el != NULL);
     int int_param;
     char *str_param;
@@ -72,7 +83,8 @@ void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, sche
                     scheduler,
                     pcb_el->value->process_id,
                     program_copy(cpu->program),
-                    cpu->program_counter + 1
+                    cpu->program_counter + 1,
+                    time                    //pass current system time
                     );
             cpu->program_counter += read_int_param_from_line(instruction) + 1;
 
@@ -93,7 +105,6 @@ void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, sche
 //    cpu->used_time_slices++;
     //        cpu.time_slice
 //    cpu.used_time_slices++;
-    // TODO: preempt process when it runs out of time slices
 //        if (cpu.time_slice == cpu.used_time_slices) {
 //            cpu.time_slice = 0;
 //            cpu.used_time_slices = 0;
@@ -129,7 +140,10 @@ void manger_run(int stdin_fd) {
         printf("%s", line);
         switch (line[0]) {
             case 'Q': // end of one unit of time
-                execute_program_instruction(&cpu, current_process, &scheduler);
+                execute_program_instruction(&cpu, current_process, &scheduler, time);
+                time++:
+                cpu.used_time_slices++;
+                check_time_slice(&cpu, pcb, time); //checking for preempting of program
                 break;
             case 'U': // unblock the first simulated process in blocked queue
                 unblocked_pcb_el = scheduler_unblock_process(&scheduler);

@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include "pcb.h"
 
-pcb_t *pcb_create(int parent_process_id, program_t *program, int program_counter) {
+pcb_t *pcb_create(int parent_process_id, program_t *program, int program_counter, int time) {
     static int process_id_counter = 0;
 
     pcb_t *pcb = malloc(sizeof(pcb_t));
@@ -26,7 +26,7 @@ pcb_t *pcb_create(int parent_process_id, program_t *program, int program_counter
     pcb->program_counter = program_counter;
     pcb->priority = 0;
     pcb->state = 0;
-    pcb->start_time = 0; // TODO: accept as argument
+    pcb->start_time = time; // TODO: accept as argument
     pcb->cpu_time_used = 0;
 
     return pcb;
