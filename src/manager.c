@@ -24,7 +24,7 @@ int read_int_param_from_line(char *line) {
 }
 void check_time_slice(cpu_t *cpu, pcb_t *pcb){//added - R
     if (ARRAY_SIZE > pcb->priority && cpu.time_slice == cpu.used_time_slices ) {//check if priority > 3
-        cpu.time_slice = priorityArr[(pcb->priority + 1)];
+        pcb->priority++;
         context_switch_cpu_to_pcb(cpu, pcb);
     }
 
@@ -72,7 +72,7 @@ void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, sche
             ZF_LOGI("Terminating process.\n");
             scheduler_process_free(scheduler, pcb_el);
             pcb_el = scheduler_dequeue_process(scheduler);
-            assert(pcb_el != NULL);
+            assert(pcb_el != NULL);//TODO: ADD variable to keep track of Turnaround time
             context_switch_pcb_to_cpu(cpu, pcb_el->value);
             break;
         case 'F': // fork

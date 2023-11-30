@@ -22,3 +22,4 @@ void context_switch_cpu_to_pcb(cpu_t *cpu, pcb_t *pcb) {
     pcb->program_counter = cpu->program_counter;
     pcb->state = cpu->state;
     pcb->cpu_time_used += cpu->used_time_slices;
+}
