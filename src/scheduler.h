@@ -21,7 +21,7 @@ typedef struct {
  */
 void scheduler_init(scheduler_t *scheduler_queues);
 
-void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int program_counter);
+void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int program_counter, int time);
 void scheduler_process_free(scheduler_t *scheduler, struct pbc_queue_item *scheduled_pcb);
 
 /**

@@ -20,7 +20,7 @@ typedef struct {
     int cpu_time_used;
 } pcb_t;
 
-pcb_t *pcb_create(int parent_process_id, program_t *program, int program_counter);
+pcb_t *pcb_create(int parent_process_id, program_t *program, int program_counter, int time);
 
 void pcb_free(pcb_t *pcb);
 

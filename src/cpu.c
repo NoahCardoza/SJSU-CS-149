@@ -4,6 +4,7 @@
 
 #include "pcb.h"
 #include "cpu.h"
+#include "config.h"
 #include "../libs/zf_log/zf_log.h"
 
 
@@ -13,7 +14,7 @@ void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb) {
     cpu->program = pcb->program;
     cpu->program_counter = pcb->program_counter;
     cpu->state = pcb->state;
-    cpu->time_slice = priorityArr[pcb->priority]; // TODO: where do we get this number from?
+    cpu->time_slice = 1 << pcb->priority;
     cpu->used_time_slices = 0;
 }
 
