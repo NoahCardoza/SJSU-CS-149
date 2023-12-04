@@ -19,8 +19,8 @@ its allocated quantum expires, its priority is raised.
 #include "pcb.h"
 #include "queues.h"
 
-struct pbc_queue_item_item *pbc_queue_enqueue(struct pbc_queue_item_head *head, struct pbc_queue_item *pcb_el) {
-    struct pbc_queue_item_item *el = (struct pbc_queue_item_item *) malloc(sizeof(struct pbc_queue_item_item));
+struct pbc_nested_queue_node *pbc_queue_enqueue(struct pbc_nested_queue_head *head, struct pbc_queue_node *pcb_el) {
+    struct pbc_nested_queue_node *el = (struct pbc_nested_queue_node *) malloc(sizeof(struct pbc_nested_queue_node));
     if (el) {
         el->value = pcb_el;
     } else {
@@ -31,9 +31,9 @@ struct pbc_queue_item_item *pbc_queue_enqueue(struct pbc_queue_item_head *head, 
     return el;
 }
 
-struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head) {
-    struct pbc_queue_item *pcb_el;
-    struct pbc_queue_item_item *el;
+struct pbc_queue_node *pbc_queue_dequeue(struct pbc_nested_queue_head *head) {
+    struct pbc_queue_node *pcb_el;
+    struct pbc_nested_queue_node *el;
     el = STAILQ_FIRST(head);
 
     if (el == NULL) {
@@ -47,8 +47,8 @@ struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head) {
 }
 
 
-void pbc_queue_print(struct pbc_queue_item_head *head, int include_priority) {
-    struct pbc_queue_item_item *pcb;
+void pbc_queue_print(struct pbc_nested_queue_head *head, int include_priority) {
+    struct pbc_nested_queue_node *pcb;
     if (head->stqh_first == NULL) {
         printf("Queue is empty.\n");
         return;

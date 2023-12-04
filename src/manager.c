@@ -23,7 +23,7 @@ manager_handel_interrupt_f *interrupt_vector_table[] = {
 
 void print_system_status(int time, pcb_t* current_process, scheduler_t *scheduler);
 
-void check_time_slice(cpu_t *cpu, struct pbc_queue_item **current_pcb, scheduler_t *scheduler){//added - R
+void check_time_slice(cpu_t *cpu, struct pbc_queue_node **current_pcb, scheduler_t *scheduler){//added - R
     assert(cpu->used_time_slices <= cpu->time_slice);
     assert(PRIO_LEVELS > (*current_pcb)->value->priority);
 
@@ -34,7 +34,7 @@ void check_time_slice(cpu_t *cpu, struct pbc_queue_item **current_pcb, scheduler
         }
 
         scheduler_enqueue_process(scheduler, (*current_pcb));
-        struct pbc_queue_item* pcb_el = scheduler_dequeue_process(scheduler);
+        struct pbc_queue_node* pcb_el = scheduler_dequeue_process(scheduler);
         if (pcb_el == *current_pcb) { // if not context switch, reset time slice
             cpu->used_time_slices = 0;
             cpu->time_slice = 1 << (*current_pcb)->value->priority;
@@ -180,7 +180,7 @@ void manager_init(manager_t *manager) {
 }
 
 void manager_unblock_process(scheduler_t *scheduler) {
-    struct pbc_queue_item *unblocked_pcb_el = NULL;
+    struct pbc_queue_node *unblocked_pcb_el = NULL;
 
     unblocked_pcb_el = scheduler_unblock_process(scheduler);
     if (unblocked_pcb_el != NULL) {

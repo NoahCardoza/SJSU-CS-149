@@ -55,7 +55,7 @@ typedef struct  {
     int time;
     int total_turnaround;
     int processes_ended;
-    struct pbc_queue_item *current_process;
+    struct pbc_queue_node *current_process;
 } manager_t;
 
 typedef void manager_handel_interrupt_f(manager_t *);
