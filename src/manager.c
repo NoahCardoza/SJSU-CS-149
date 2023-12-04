@@ -78,7 +78,7 @@ void execute_program_instruction(manager_t *manager) {
 }
 
 void manger_handel_command_process_time_slice(manager_t *manager) {
-    int interrupt;
+    ZF_LOGI("Processing command \"Q\".");
 
     if (manager->current_process == NULL) {
         manager->current_process = scheduler_dequeue_process(&manager->scheduler);
@@ -146,7 +146,7 @@ void manger_run() {
  * @param manager
  */
 int manager_handel_command_terminate(manager_t *manager) {
-    ZF_LOGI("Printing turn around time.");
+    ZF_LOGI("Processing command \"T\".");
 
     if (manager->processes_ended == 0) {
         printf("No processes have ended.\n");
@@ -171,7 +171,7 @@ int manager_handel_command_terminate(manager_t *manager) {
  * @param manager
  */
 void manager_handel_command_print_system_state(manager_t *manager) {
-    ZF_LOGI("Printing system status.");
+    ZF_LOGI("Processing command \"P\".");
     #if FEATURE_THREAD_FOR_PRINT_STATE
         pthread_t thread;
         pthread_attr_t attr;
@@ -193,6 +193,7 @@ void manager_init(manager_t *manager) {
 }
 
 void manager_handel_command_unblock_process(scheduler_t *scheduler) {
+    ZF_LOGI("Processing command \"U\".");
     struct pbc_queue_node *unblocked_pcb_el = NULL;
 
     unblocked_pcb_el = scheduler_unblock_process(scheduler);
@@ -243,8 +244,9 @@ void manager_handel_interrupt_block(manager_t *manager) {
     }
     scheduler_block_process(&manager->scheduler, manager->current_process);
     manager->current_process = scheduler_dequeue_process(&manager->scheduler);
-    assert(manager->current_process != NULL && "Process blocked without another process ready to run.");
-    context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
+    if (manager->current_process != NULL) {
+        context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
+    }
 }
 
 void manager_handel_interrupt_fork(manager_t *manager) {
