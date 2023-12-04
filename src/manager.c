@@ -269,10 +269,19 @@ void manager_handel_interrupt_fork(manager_t *manager) {
             manager->cpu.state,
             manager->cpu.program_counter,
             manager->time                    // pass current system time
-            );
-    manager->cpu.program_counter += (int) manager->cpu.interrupt_argument;
-}
+    );
+    if (manager->cpu.interrupt_argument < 0) {
+        fprintf(stderr, "Invalid fork (ln: %d): jump less than zero.\n", manager->cpu.program_counter);
+        exit(1);
+    }
 
+    manager->cpu.program_counter += (int) manager->cpu.interrupt_argument;
+
+    if (manager->cpu.program_counter >= manager->cpu.program->count) {
+        fprintf(stderr, "Invalid fork (ln: %d): program counter overflow.\n", manager->cpu.program_counter - (int) manager->cpu.interrupt_argument);
+        exit(1);
+    }
+}
 void manager_handel_interrupt_load(manager_t *manager) {
     program_t *temp_program;
     ZF_LOGI("Loading another process from \"%s\".", (char *) manager->cpu.interrupt_argument);
