@@ -30,7 +30,7 @@ program_t *program_get(char *file_name) {
         perror("fopen");
     }
 
-    size_t bufflen = 256;
+    size_t bufflen = 16;
     char *line = NULL;
 
     program_t *program = malloc(sizeof(program_t));
@@ -55,9 +55,7 @@ program_t *program_get(char *file_name) {
         len = strlen(line);
 
         // remove newline if it ends with one
-        if (line[len - 1] == '\n') {
-            line[--len] = '\0';
-        }
+        line[strcspn(line, "\r\n")] = '\0';
 
         program->lines[program->count] = malloc(len + 1);
         memccpy(program->lines[program->count], line, 0, len);
