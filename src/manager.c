@@ -12,35 +12,9 @@
 #include "cpu.h"
 #include "scheduler.h"
 #include "../libs/zf_log/zf_log.h"
-
-typedef struct  {
-    cpu_t cpu;
-    scheduler_t scheduler;
-    int time;
-    int total_turnaround;
-    int processes_ended;
-    struct pbc_queue_item *current_process;
-} manager_t;
-
-#define INTERRUPT_NONE 0
-#define INTERRUPT_TERMINATE 1
-#define INTERRUPT_BLOCK 2
-#define INTERRUPT_FORK 3
-#define INTERRUPT_LOAD 4
+#include "pcb.h"
 
 void print_system_status(int time, pcb_t* current_process, scheduler_t *scheduler);
-
-void manager_handel_interrupt(manager_t *manager);
-
-void manager_unblock_process(scheduler_t *scheduler);
-
-void manager_init(manager_t *manager);
-
-void manager_print_system_state(manager_t *manager);
-
-int manager_calculate_turn_around_time(manager_t *manager);
-
-int manager_terminate(manager_t *manager);
 
 char* read_str_param_from_line(char *line) {
     return line + 2;
@@ -81,43 +55,30 @@ void check_time_slice(cpu_t *cpu, struct pbc_queue_item **current_pcb, scheduler
 }
 
 void execute_program_instruction(manager_t *manager) {
-    int int_param;
     char *instruction = manager->cpu.program->lines[manager->cpu.program_counter++];
     instruction[strcspn(instruction, "\r\n")] = 0;
     ZF_LOGI("Executing instruction: \"%s\".", instruction);
     switch (instruction[0]) {
-        case 'S': // set
-            int_param = read_int_param_from_line(instruction);
-            ZF_LOGI("Setting CPU value to %d.", int_param);
-            manager->cpu.state = int_param;
-            break;
-        case 'A': // sdd
-            int_param = read_int_param_from_line(instruction);
-            ZF_LOGI("Adding %d to CPU value.", int_param);
-            manager->cpu.state += int_param;
-            break;
-        case 'D': // sub
-            int_param = read_int_param_from_line(instruction);
-            ZF_LOGI("Subtracting %d from CPU value.", int_param);
-            manager->cpu.state -= int_param;
-            break;
-        case 'B': // block
-            ZF_LOGI("Blocking process.");
-            manager->cpu.interrupt_id = INTERRUPT_BLOCK;
+        case INSTRUCTION_SET:
+            cpu_state_set(&manager->cpu, read_int_param_from_line(instruction));
             return;
-        case 'E': // terminate
-            ZF_LOGI("Terminating process.");
-            manager->cpu.interrupt_id = INTERRUPT_TERMINATE;
+        case INSTRUCTION_ADD:
+            cpu_state_add(&manager->cpu, read_int_param_from_line(instruction));
             return;
-        case 'F': // fork
-            // TODO: simulate interrupt with value
-            manager->cpu.interrupt_id = INTERRUPT_FORK;
-            manager->cpu.interrupt_argument = read_int_param_from_line(instruction);
+        case INSTRUCTION_SUBTRACT:
+            cpu_state_sub(&manager->cpu, read_int_param_from_line(instruction));
             return;
-        case 'R': // load another process from a file
-            manager->cpu.interrupt_id = INTERRUPT_LOAD;
-            manager->cpu.interrupt_argument = (size_t) read_str_param_from_line(instruction);
-            ZF_LOGI("Loading another process from \"%s\".", (char*) manager->cpu.interrupt_argument);
+        case INSTRUCTION_BLOCK:
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_BLOCK, 0);
+            return;
+        case INSTRUCTION_TERMINATE:
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_TERMINATE, 0);
+            return;
+        case INSTRUCTION_FORK:
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_FORK, read_int_param_from_line(instruction));
+            return;
+        case INSTRUCTION_LOAD:
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_LOAD, (size_t) read_str_param_from_line(instruction));
             return;
     }
 }
@@ -246,6 +207,7 @@ void manager_handel_interrupt(manager_t *manager) {
 
     switch (manager->cpu.interrupt_id) {
         case INTERRUPT_TERMINATE:
+            ZF_LOGI("Terminating process.");
             manager->time++;
             manager->total_turnaround += manager_calculate_turn_around_time(manager);
             scheduler_process_free(&manager->scheduler, manager->current_process);
@@ -258,6 +220,7 @@ void manager_handel_interrupt(manager_t *manager) {
             }
             break;
         case INTERRUPT_BLOCK:
+            ZF_LOGI("Blocking process.");
             context_switch_cpu_to_pcb(&manager->cpu, manager->current_process->value);
             if (manager->current_process->value->priority > 0) {
                 manager->current_process->value->priority--;
@@ -280,6 +243,7 @@ void manager_handel_interrupt(manager_t *manager) {
             manager->cpu.program_counter += (int) manager->cpu.interrupt_argument;
             break;
         case INTERRUPT_LOAD:
+            ZF_LOGI("Loading another process from \"%s\".", (char*) manager->cpu.interrupt_argument);
             temp_program = manager->cpu.program;
             manager->cpu.program = program_get((char *) manager->cpu.interrupt_argument);
             manager->cpu.program_counter = 0;
@@ -288,7 +252,7 @@ void manager_handel_interrupt(manager_t *manager) {
     }
 
 
-    if (!manager->cpu.interrupt_id || manager->cpu.interrupt_id > 2) {
+    if (manager->cpu.interrupt_id == INTERRUPT_NONE || manager->cpu.interrupt_id > 2) {
         manager->time++;
         manager->cpu.used_time_slices++;
         check_time_slice(&manager->cpu, &manager->current_process, &manager->scheduler); //checking for preempting of program
@@ -305,24 +269,20 @@ void print_system_status(int time, pcb_t* current_process, scheduler_t *schedule
 
     printf("RUNNING PROCESS:\n");
     if (current_process != NULL) {
-    print_running_process(current_process->process_id,
-                          current_process->parent_process_id,
-                          current_process->priority,
-                          current_process->state,
-                          current_process->start_time,
-                          current_process->cpu_time_used);
+        pcb_print_header(1);
+        pcb_print(current_process, 1);
     } else {
         printf("No process is currently running.\n");
     }
 
     printf("BLOCKED PROCESSES:\n");
-    print_blocked_process(&scheduler->blocked_queue_head);
+    pbc_queue_print(&scheduler->blocked_queue_head, 1);
 
     printf("PROCESSES READY TO EXECUTE:\n");
 
     for (int priority = 0; priority < PRIO_LEVELS; ++priority) {
         printf("Queue of processes with priority %d:\n", priority);
-        print_pcb_info(&scheduler->priority_queue_heads[priority]);
+        pbc_queue_print(&scheduler->priority_queue_heads[priority], 0);
     }
     printf("****************************************************************\n");
 }

@@ -49,5 +49,9 @@ void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb);
 
 void context_switch_cpu_to_pcb(cpu_t *cpu, pcb_t *pcb);
 
+void cpu_set_interrupt(cpu_t *cpu, int interrupt_id, size_t interrupt_argument);
+void cpu_state_set(cpu_t *cpu, int state);
+void cpu_state_add(cpu_t *cpu, int state);
+void cpu_state_sub(cpu_t *cpu, int state);
 
 #endif //SJSU_CS_149_CPU_H

@@ -17,7 +17,6 @@ its allocated quantum expires, its priority is raised.
 #include <stdlib.h>
 #include <sys/queue.h>
 #include "pcb.h"
-#include "config.h"
 #include "queues.h"
 
 struct pbc_queue_item_item *pbc_queue_enqueue(struct pbc_queue_item_head *head, struct pbc_queue_item *pcb_el) {
@@ -47,25 +46,16 @@ struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head) {
     return pcb_el;
 }
 
-void print_running_process(int pid, int ppid, int priority, int value, int start_time, int used_time) {
-    printf("%d, %d, %d, %d, %d, %d\n", pid, ppid, priority, value, start_time, used_time);
-}
 
-
-void print_blocked_process(struct pbc_queue_item_head *head) {
+void pbc_queue_print(struct pbc_queue_item_head *head, int include_priority) {
     struct pbc_queue_item_item *pcb;
-
-    STAILQ_FOREACH(pcb, head, entries) {
-        printf("%d, %d, %d, %d, %d, %d\n",
-               pcb->value->value->process_id, pcb->value->value->parent_process_id, pcb->value->value->priority, pcb->value->value->state, pcb->value->value->start_time, pcb->value->value->cpu_time_used);
+    if (head->stqh_first == NULL) {
+        printf("Queue is empty.\n");
+        return;
     }
-}
 
-void print_pcb_info(struct pbc_queue_item_head *head) {
-    struct pbc_queue_item_item *pcb;
-
+    pcb_print_header(include_priority);
     STAILQ_FOREACH(pcb, head, entries) {
-        printf("%d, %d, %d, %d, %d\n",
-               pcb->value->value->process_id, pcb->value->value->parent_process_id, pcb->value->value->state, pcb->value->value->start_time, pcb->value->value->cpu_time_used);
+        pcb_print(pcb->value->value, include_priority);
     }
 }

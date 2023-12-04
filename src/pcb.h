@@ -4,6 +4,10 @@
 
 #ifndef SJSU_CS_149_PCB_H
 #define SJSU_CS_149_PCB_H
+
+#include <sys/queue.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "program.h"
 
 /**
@@ -23,5 +27,9 @@ typedef struct {
 pcb_t *pcb_create(int parent_process_id, program_t *program, int state, int program_counter, int time);
 
 void pcb_free(pcb_t *pcb);
+
+void pcb_print(pcb_t *pcb, int include_priority);
+
+void pcb_print_header(int include_priority);
 
 #endif //SJSU_CS_149_PCB_H
