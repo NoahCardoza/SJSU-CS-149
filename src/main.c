@@ -42,8 +42,8 @@ int fork_and_pipe() {
 
 int main(int argc, char **argv) {
 //    fork_and_pipe();
-
-    freopen("../scripts/cmds", "r", stdin);
+    chdir("../tests/00");
+    freopen("./cmds", "r", stdin);
 
     manger_run(0);
 

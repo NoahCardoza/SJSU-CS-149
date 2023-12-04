@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <strings.h>
 #include "manager.h"
 #include "config.h"
 #include "cpu.h"
@@ -31,16 +32,16 @@ void check_time_slice(cpu_t *cpu, struct pbc_queue_item **current_pcb, scheduler
             (*current_pcb)->value->priority++;
         }
 
+        scheduler_enqueue_process(scheduler, (*current_pcb));
         struct pbc_queue_item* pcb_el = scheduler_dequeue_process(scheduler);
-        if (pcb_el != NULL) { // only switch if there is another process ready to run
-            context_switch_cpu_to_pcb(cpu, (*current_pcb)->value);
-            context_switch_pcb_to_cpu(cpu, pcb_el->value);
-            scheduler_enqueue_process(scheduler, (*current_pcb));
-            *current_pcb = pcb_el;
-        } else { // if not context switch, reset time slice
+        if (pcb_el == *current_pcb) { // if not context switch, reset time slice
             cpu->used_time_slices = 0;
             cpu->time_slice = 1 << (*current_pcb)->value->priority;
             ZF_LOGI("Refreshing time slice: pid=%d, priority=%d, quantum=%d", (*current_pcb)->value->process_id, (*current_pcb)->value->priority, cpu->time_slice);
+        } else { // only switch if there is another process ready to run
+            context_switch_cpu_to_pcb(cpu, (*current_pcb)->value);
+            context_switch_pcb_to_cpu(cpu, pcb_el->value);
+            *current_pcb = pcb_el;
         }
     }
 
@@ -56,6 +57,7 @@ int execute_program_instruction(
     int int_param;
     char *str_param;
     char *instruction = cpu->program->lines[cpu->program_counter++];
+    instruction[strcspn(instruction, "\r\n")] = 0;
     ZF_LOGI("Executing instruction: \"%s\".", instruction);
     switch (instruction[0]) {
         case 'S': // set
@@ -136,6 +138,16 @@ void manger_run(int stdin_fd) {
         getline(&line, &len, in);
         switch (line[0]) {
             case 'Q': // end of one unit of time added Turnaround time and processed ended
+                if (current_process == NULL) {
+                    current_process = scheduler_dequeue_process(&scheduler);
+                    if (current_process == NULL) {
+                        break;
+                    }
+                    context_switch_pcb_to_cpu(&cpu, current_process->value);
+                }
+//                printf("All processes completed.\n");
+//                print_system_status(time, (void*)0, &scheduler);
+//                printf("Average total_turnaround time: %d\n", (total_turnaround / processes_ended));//calculate average time
                 interrupt = execute_program_instruction(&cpu, current_process, &scheduler, time);
                 if (interrupt == 1) {
                     time++;
@@ -144,14 +156,10 @@ void manger_run(int stdin_fd) {
                     current_process = scheduler_dequeue_process(&scheduler);
                     processes_ended++; //added to keep track of total process ended
                     if (current_process == NULL) {
-                        printf("All processes completed.\n");
-                        print_system_status(time, (void*)0, &scheduler);
-                        printf("Average total_turnaround time: %d\n", (total_turnaround / processes_ended));//calculate average time
-                        running = 0;
-                        break;
+                        current_process = (void*)0;
+                    } else {
+                        context_switch_pcb_to_cpu(&cpu, current_process->value);
                     }
-                    context_switch_pcb_to_cpu(&cpu, current_process->value);
-
                 } else if (interrupt == 2) {
                     context_switch_cpu_to_pcb(&cpu, current_process->value);
                     if (current_process->value->priority > 0) {
@@ -229,6 +237,7 @@ void print_system_status(int time, pcb_t* current_process, scheduler_t *schedule
     print_blocked_process(&scheduler->blocked_queue_head);
 
     printf("PROCESSES READY TO EXECUTE:\n");
+
     for (int priority = 0; priority < PRIO_LEVELS; ++priority) {
         printf("Queue of processes with priority %d:\n", priority);
         print_pcb_info(&scheduler->priority_queue_heads[priority]);
