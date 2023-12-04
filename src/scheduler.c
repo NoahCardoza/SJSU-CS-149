@@ -47,9 +47,10 @@ struct pbc_queue_node * scheduler_unblock_process(scheduler_t *scheduler) {
     return item;
 }
 
-void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int state, int program_counter, int time) {
-    ZF_LOGI("Initializing process: parent_pid=%d, state=%d, program_counter=%d, time=%d", parent_pid, state, program_counter, time);
-    pcb_t *pcb = pcb_create(parent_pid, program, state, program_counter, time);
+void scheduler_process_init(scheduler_t *scheduler, int parent_pid, int priority, program_t *program, int state, int program_counter,
+                            int time) {
+    ZF_LOGI("Initializing process: parent_pid=%d, priority=%d, state=%d program_counter=%d, time=%d", parent_pid, priority, state, program_counter, time);
+    pcb_t *pcb = pcb_create(parent_pid, priority, program, state, program_counter, time);
 
     struct pbc_queue_node *el = (struct pbc_queue_node *) malloc(sizeof(struct pbc_queue_node));
     if (!el) {

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "pcb.h"
 
-pcb_t *pcb_create(int parent_process_id, program_t *program, int state, int program_counter, int time) {
+pcb_t *pcb_create(int parent_process_id, int priority, program_t *program, int state, int program_counter, int time) {
     static int process_id_counter = 0;
 
     pcb_t *pcb = malloc(sizeof(pcb_t));
@@ -21,7 +21,7 @@ pcb_t *pcb_create(int parent_process_id, program_t *program, int state, int prog
     pcb->parent_process_id = parent_process_id;
     pcb->program = program;
     pcb->program_counter = program_counter;
-    pcb->priority = 0;
+    pcb->priority = priority;
     pcb->state = state;
     pcb->start_time = time;
     pcb->cpu_time_used = 0;
