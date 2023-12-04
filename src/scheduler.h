@@ -29,12 +29,14 @@ void scheduler_init(scheduler_t *scheduler);
  * Initializes a process and enqueues it in the scheduler.
  * @param scheduler The scheduler to preform the operation on.
  * @param parent_pid The parent process id.
+ * @param priority The priority.
  * @param program The program to run.
  * @param state The state of the process.
  * @param program_counter The program counter.
  * @param time The time.
  */
-void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int state, int program_counter, int time);
+void scheduler_process_init(scheduler_t *scheduler, int parent_pid, int priority, program_t *program, int state, int program_counter,
+                            int time);
 
 /**
  * Frees a process from the scheduler queues.

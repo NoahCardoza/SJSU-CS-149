@@ -96,7 +96,7 @@ void manger_run() {
     manager_init(&manager);
 
     scheduler_init(&manager.scheduler);
-    scheduler_process_init(&manager.scheduler, 0, program_get("init"), 0, 0, manager.time);
+    scheduler_process_init(&manager.scheduler, 0, 0, program_get("init"), 0, 0, manager.time);
 
     manager.current_process = scheduler_dequeue_process(&manager.scheduler);
     context_switch_pcb_to_cpu(&manager.cpu, manager.current_process->value);
@@ -238,11 +238,12 @@ void manager_handel_interrupt_fork(manager_t *manager) {
     scheduler_process_init(
             &manager->scheduler,
             manager->current_process->value->process_id,
+            manager->current_process->value->priority,
             program_copy(manager->cpu.program),
             manager->cpu.state,
             manager->cpu.program_counter,
             manager->time                    // pass current system time
-    );
+            );
     manager->cpu.program_counter += (int) manager->cpu.interrupt_argument;
 }
 

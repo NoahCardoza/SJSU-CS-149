@@ -33,7 +33,7 @@ typedef struct {
  * @param time The time.
  * @return The initialized PCB.
  */
-pcb_t *pcb_create(int parent_process_id, program_t *program, int state, int program_counter, int time);
+pcb_t *pcb_create(int parent_process_id, int priority, program_t *program, int state, int program_counter, int time);
 
 /**
  * Frees a pcb_t struct.
