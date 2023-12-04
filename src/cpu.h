@@ -45,6 +45,7 @@ typedef struct {
     size_t interrupt_argument;
 } cpu_t;
 
+void cpu_init(cpu_t *cpu);
 
 /**
  * Context switch PCB to CPU.

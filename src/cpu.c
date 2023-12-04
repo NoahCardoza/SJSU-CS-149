@@ -6,6 +6,16 @@
 #include "cpu.h"
 #include "../libs/zf_log/zf_log.h"
 
+void cpu_init(cpu_t *cpu) {
+    cpu->program = NULL;
+    cpu->program_counter = 0;
+    cpu->state = 0;
+    cpu->time_slice = 0;
+    cpu->used_time_slices = 0;
+    cpu->interrupt_id = 0;
+    cpu->interrupt_argument = 0;
+}
+
 void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb) {
     ZF_LOGI("Context switching from PCB to CPU: process_id = %d", pcb->process_id);
     cpu->program = pcb->program;
