@@ -187,7 +187,7 @@ void manger_run(int stdin_fd) {
                 ZF_LOGI("Printing system status.");
                 // On receiving a P command, the process
                 // manager spawns a new reporter process.
-                print_system_status(time, current_process->value, &scheduler);
+                print_system_status(time, current_process != NULL ? current_process->value : NULL, &scheduler);
                 break;
             case 'T': // print the average total_turnaround time and terminate the system
                 ZF_LOGI("Printing turn around time.");
