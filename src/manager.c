@@ -274,7 +274,7 @@ void print_system_status(manager_t *manager) {
     printf("\n****************************************************************\n"
            "The current system state is as follows:\n"
            "****************************************************************\n");
-    printf("CURRENT TIME: %d\n", time);
+    printf("CURRENT TIME: %d\n", manager->time);
 
     printf("RUNNING PROCESS:\n");
     if (manager->current_process != NULL) {

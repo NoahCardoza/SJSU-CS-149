@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     #if FEATURE_PROCESS_FOR_MANAGER
         fork_and_pipe();
     #else
-        manger_run(0);
+        manger_run();
     #endif
 
     return 0;
