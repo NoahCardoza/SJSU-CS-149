@@ -52,6 +52,6 @@ void print_running_process(int pid, int ppid, int value, int start_time, int use
 }
 
 void print_blocked_process(struct pbc_queue_item *head) {
-    STAILQ_FOREACH(np, &head, entries)
+    STAILQ_FOREACH(np, &head, entries);
         printf("%i\n", np->data);
 }
