@@ -37,6 +37,7 @@ void check_time_slice(cpu_t *cpu, struct pbc_queue_node **current_pcb, scheduler
         scheduler_enqueue_process(scheduler, (*current_pcb));
         struct pbc_queue_node* pcb_el = scheduler_dequeue_process(scheduler);
         if (pcb_el == *current_pcb) { // if not context switch, reset time slice
+            pcb_el->value->state = cpu->state; //TODO discuss if we need to show the value before context switch.
             pcb_el->value->cpu_time_used += cpu->used_time_slices; // update cpu used time when not context switching
             cpu->used_time_slices = 0;
             cpu->time_slice = 1 << (*current_pcb)->value->priority;
