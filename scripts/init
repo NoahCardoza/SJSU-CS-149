@@ -1,5 +1,17 @@
 S 1000
+A 19
+A 20
+D 53
 A 55
+F 2
+A 100
+R calc.prog
 F 1
-R file_a
+R calc.prog
+F 1
+R calc.prog
+F 1
+R calc.prog
+F 1
+R calc.prog
 E

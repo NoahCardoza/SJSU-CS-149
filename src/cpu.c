@@ -10,7 +10,7 @@
 
 
 void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb) {
-    ZF_LOGI("Context switching from PCB to CPU:\n\tprocess_id: %d\n", pcb->process_id);
+    ZF_LOGI("Context switching from PCB to CPU: process_id = %d", pcb->process_id);
     cpu->program = pcb->program;
     cpu->program_counter = pcb->program_counter;
     cpu->state = pcb->state;
@@ -19,7 +19,7 @@ void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb) {
 }
 
 void context_switch_cpu_to_pcb(cpu_t *cpu, pcb_t *pcb) {
-    ZF_LOGI("Context switching from CPU to PCB:\n\tprocess_id: %d\n", pcb->process_id);
+    ZF_LOGI("Context switching from CPU to PCB: process_id = %d", pcb->process_id);
     pcb->program_counter = cpu->program_counter;
     pcb->program = cpu->program;
     pcb->state = cpu->state;
