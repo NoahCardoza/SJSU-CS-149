@@ -1,0 +1,18 @@
+Expected results:
+	test_init file starts:
+
+n =	1000
+	1042
+	1004
+	1002
+	1068
+	create a sim proc, open file_no
+		initial at new proc: 1068
+		68
+		blocked
+	180
+	unblock
+	Parent end.
+		Print state
+		76
+		Proc end.
