@@ -14,21 +14,15 @@
 #include "../libs/zf_log/zf_log.h"
 #include "pcb.h"
 
+manager_handel_interrupt_f *interrupt_vector_table[] = {
+        manager_handel_interrupt_terminate,
+        manager_handel_interrupt_block,
+        manager_handel_interrupt_fork,
+        manager_handel_interrupt_load,
+};
+
 void print_system_status(int time, pcb_t* current_process, scheduler_t *scheduler);
 
-char* read_str_param_from_line(char *line) {
-    return line + 2;
-}
-
-int read_int_param_from_line(char *line) {
-    char *end;
-    int value = (int)strtol(read_str_param_from_line(line), &end, 10);
-    if (*end != '\0') {
-        printf("Invalid numeric parameter: %s\n", line);
-        exit(1);
-    }
-    return value;
-}
 void check_time_slice(cpu_t *cpu, struct pbc_queue_item **current_pcb, scheduler_t *scheduler){//added - R
     assert(cpu->used_time_slices <= cpu->time_slice);
     assert(PRIO_LEVELS > (*current_pcb)->value->priority);
@@ -51,7 +45,6 @@ void check_time_slice(cpu_t *cpu, struct pbc_queue_item **current_pcb, scheduler
             *current_pcb = pcb_el;
         }
     }
-
 }
 
 void execute_program_instruction(manager_t *manager) {
@@ -60,13 +53,13 @@ void execute_program_instruction(manager_t *manager) {
     ZF_LOGI("Executing instruction: \"%s\".", instruction);
     switch (instruction[0]) {
         case INSTRUCTION_SET:
-            cpu_state_set(&manager->cpu, read_int_param_from_line(instruction));
+            cpu_state_set(&manager->cpu, program_read_int_param_from_line(instruction));
             return;
         case INSTRUCTION_ADD:
-            cpu_state_add(&manager->cpu, read_int_param_from_line(instruction));
+            cpu_state_add(&manager->cpu, program_read_int_param_from_line(instruction));
             return;
         case INSTRUCTION_SUBTRACT:
-            cpu_state_sub(&manager->cpu, read_int_param_from_line(instruction));
+            cpu_state_sub(&manager->cpu, program_read_int_param_from_line(instruction));
             return;
         case INSTRUCTION_BLOCK:
             cpu_set_interrupt(&manager->cpu, INTERRUPT_BLOCK, 0);
@@ -75,14 +68,13 @@ void execute_program_instruction(manager_t *manager) {
             cpu_set_interrupt(&manager->cpu, INTERRUPT_TERMINATE, 0);
             return;
         case INSTRUCTION_FORK:
-            cpu_set_interrupt(&manager->cpu, INTERRUPT_FORK, read_int_param_from_line(instruction));
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_FORK, program_read_int_param_from_line(instruction));
             return;
         case INSTRUCTION_LOAD:
-            cpu_set_interrupt(&manager->cpu, INTERRUPT_LOAD, (size_t) read_str_param_from_line(instruction));
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_LOAD, (size_t) program_read_str_param_from_line(instruction));
             return;
     }
 }
-
 
 void manger_process_time_slice(manager_t *manager) {
     int interrupt;
@@ -203,55 +195,9 @@ int manager_calculate_turn_around_time(manager_t *manager) {
 }
 
 void manager_handel_interrupt(manager_t *manager) {
-    program_t *temp_program;
-
-    switch (manager->cpu.interrupt_id) {
-        case INTERRUPT_TERMINATE:
-            ZF_LOGI("Terminating process.");
-            manager->time++;
-            manager->total_turnaround += manager_calculate_turn_around_time(manager);
-            scheduler_process_free(&manager->scheduler, manager->current_process);
-            manager->current_process = scheduler_dequeue_process(&manager->scheduler);
-            manager->processes_ended++; //added to keep track of total process ended
-            if (manager->current_process == NULL) {
-                manager->current_process = NULL;
-            } else {
-                context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
-            }
-            break;
-        case INTERRUPT_BLOCK:
-            ZF_LOGI("Blocking process.");
-            context_switch_cpu_to_pcb(&manager->cpu, manager->current_process->value);
-            if (manager->current_process->value->priority > 0) {
-                manager->current_process->value->priority--;
-            }
-            scheduler_block_process(&manager->scheduler, manager->current_process);
-            manager->current_process = scheduler_dequeue_process(&manager->scheduler);
-            assert(manager->current_process != NULL && "Process blocked without another process ready to run.");
-            context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
-            break;
-        case INTERRUPT_FORK:
-            ZF_LOGI("Forking process.");
-            scheduler_process_init(
-                    &manager->scheduler,
-                    manager->current_process->value->process_id,
-                    program_copy(manager->cpu.program),
-                    manager->cpu.state,
-                    manager->cpu.program_counter,
-                    manager->time                    // pass current system time
-            );
-            manager->cpu.program_counter += (int) manager->cpu.interrupt_argument;
-            break;
-        case INTERRUPT_LOAD:
-            ZF_LOGI("Loading another process from \"%s\".", (char*) manager->cpu.interrupt_argument);
-            temp_program = manager->cpu.program;
-            manager->cpu.program = program_get((char *) manager->cpu.interrupt_argument);
-            manager->cpu.program_counter = 0;
-            program_free(temp_program);
-            break;
+    if (manager->cpu.interrupt_id != INTERRUPT_NONE) {
+        interrupt_vector_table[manager->cpu.interrupt_id - 1](manager);
     }
-
-
     if (manager->cpu.interrupt_id == INTERRUPT_NONE || manager->cpu.interrupt_id > 2) {
         manager->time++;
         manager->cpu.used_time_slices++;
@@ -259,6 +205,55 @@ void manager_handel_interrupt(manager_t *manager) {
     }
 
     manager->cpu.interrupt_id = 0;
+}
+
+void manager_handel_interrupt_terminate(manager_t *manager) {
+    ZF_LOGI("Terminating process.");
+    manager->time++; // TODO: are we sure this belongs here?
+    manager->processes_ended++; //added to keep track of total process ended
+    manager->total_turnaround += manager_calculate_turn_around_time(manager);
+
+    scheduler_process_free(&manager->scheduler, manager->current_process);
+    manager->current_process = scheduler_dequeue_process(&manager->scheduler);
+    if (manager->current_process == NULL) {
+        manager->current_process = NULL;
+    } else {
+        context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
+    }
+}
+
+void manager_handel_interrupt_block(manager_t *manager) {
+    ZF_LOGI("Blocking process.");
+    context_switch_cpu_to_pcb(&manager->cpu, manager->current_process->value);
+    if (manager->current_process->value->priority > 0) {
+        manager->current_process->value->priority--;
+    }
+    scheduler_block_process(&manager->scheduler, manager->current_process);
+    manager->current_process = scheduler_dequeue_process(&manager->scheduler);
+    assert(manager->current_process != NULL && "Process blocked without another process ready to run.");
+    context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
+}
+
+void manager_handel_interrupt_fork(manager_t *manager) {
+    ZF_LOGI("Forking process.");
+    scheduler_process_init(
+            &manager->scheduler,
+            manager->current_process->value->process_id,
+            program_copy(manager->cpu.program),
+            manager->cpu.state,
+            manager->cpu.program_counter,
+            manager->time                    // pass current system time
+    );
+    manager->cpu.program_counter += (int) manager->cpu.interrupt_argument;
+}
+
+void manager_handel_interrupt_load(manager_t *manager) {
+    program_t *temp_program;
+    ZF_LOGI("Loading another process from \"%s\".", (char *) manager->cpu.interrupt_argument);
+    temp_program = manager->cpu.program;
+    manager->cpu.program = program_get((char *) manager->cpu.interrupt_argument);
+    manager->cpu.program_counter = 0;
+    program_free(temp_program);
 }
 
 void print_system_status(int time, pcb_t* current_process, scheduler_t *scheduler) {

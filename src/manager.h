@@ -58,6 +58,8 @@ typedef struct  {
     struct pbc_queue_item *current_process;
 } manager_t;
 
+typedef void manager_handel_interrupt_f(manager_t *);
+
 void manger_run(int stdin_fd);
 
 void manager_handel_interrupt(manager_t *manager);
@@ -72,4 +74,11 @@ int manager_calculate_turn_around_time(manager_t *manager);
 
 int manager_terminate(manager_t *manager);
 
+void manager_handel_interrupt_load(manager_t *manager);
+
+void manager_handel_interrupt_fork(manager_t *manager);
+
+void manager_handel_interrupt_block(manager_t *manager);
+
+void manager_handel_interrupt_terminate(manager_t *manager);
 #endif //SJSU_CS_149_MANAGER_H

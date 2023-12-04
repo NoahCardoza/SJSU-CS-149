@@ -9,6 +9,10 @@
 #include "config.h"
 #include "queues.h"
 
+/**
+ * This data structure represents a simulated scheduler.
+ * It contains a queue for each priority level and a blocked queue.
+ */
 typedef struct {
     struct pbc_queue_head pcb_table;
     struct pbc_queue_item_head priority_queue_heads[PRIO_LEVELS];
@@ -16,41 +20,56 @@ typedef struct {
 } scheduler_t;
 
 /**
- * This function is used to initialize the scheduler queues.
- * @param scheduler_queues
+ * Initializes the scheduler queues.
+ * @param scheduler The new scheduler to preform the operation on.
  */
-void scheduler_init(scheduler_t *scheduler_queues);
+void scheduler_init(scheduler_t *scheduler);
 
+/**
+ * Initializes a process and enqueues it in the scheduler.
+ * @param scheduler The scheduler to preform the operation on.
+ * @param parent_pid The parent process id.
+ * @param program The program to run.
+ * @param state The state of the process.
+ * @param program_counter The program counter.
+ * @param time The time.
+ */
 void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int state, int program_counter, int time);
+
+/**
+ * Frees a process from the scheduler queues.
+ * @param scheduler The scheduler to preform the operation on.
+ * @param scheduled_pcb The process to free.
+ */
 void scheduler_process_free(scheduler_t *scheduler, struct pbc_queue_item *scheduled_pcb);
 
 /**
- * This function is used to enqueue a process into the scheduler queues.
- * @param scheduler_queues
- * @param pcb
+ * Enqueues a process into the scheduler queues.
+ * @param scheduler The scheduler to preform the operation on.
+ * @param pcb_el The process to enqueue.
  */
-void scheduler_enqueue_process(scheduler_t *scheduler_queues, struct pbc_queue_item * pcb_el);
+void scheduler_enqueue_process(scheduler_t *scheduler, struct pbc_queue_item * pcb_el);
 
 /**
- * This function is used to dequeue a process from the scheduler queues. It
- * first checks the highest priority queue and then goes down the priority
+ * Dequeues a process from the scheduler queues. It first checks
+ * the highest priority queue and then goes down the priority
  * levels.
- * @param scheduler_queues
- * @return
+ * @param scheduler The scheduler to preform the operation on.
+ * @return The process that was dequeued.
  */
-struct pbc_queue_item * scheduler_dequeue_process(scheduler_t *scheduler_queues);
+struct pbc_queue_item * scheduler_dequeue_process(scheduler_t *scheduler);
 
 /**
- * This function is used to block a process.
- * @param scheduler
- * @param pcb_el
+ * Puts a process into the blocked queue.
+ * @param scheduler The scheduler to preform the operation on.
+ * @param pcb_el The process to block.
  */
 void scheduler_block_process(scheduler_t *scheduler, struct pbc_queue_item *pcb_el);
 
 /**
- * This function is used to unblock a process.
- * @param scheduler
- * @return
+ * Removes a process from the blocked queue.
+ * @param scheduler The scheduler to preform the operation on.
+ * @return The process that was unblocked.
  */
 struct pbc_queue_item * scheduler_unblock_process(scheduler_t *scheduler);
 

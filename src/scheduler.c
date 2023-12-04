@@ -6,23 +6,23 @@
 #include "scheduler.h"
 #include "../libs/zf_log/zf_log.h"
 
-void scheduler_init(scheduler_t *scheduler_queues) {
-    STAILQ_INIT(&scheduler_queues->pcb_table);
+void scheduler_init(scheduler_t *scheduler) {
+    STAILQ_INIT(&scheduler->pcb_table);
     for (int i = 0; i < PRIO_LEVELS; i++) {
-        STAILQ_INIT(&scheduler_queues->priority_queue_heads[i]);
+        STAILQ_INIT(&scheduler->priority_queue_heads[i]);
     }
-    STAILQ_INIT(&scheduler_queues->blocked_queue_head);
+    STAILQ_INIT(&scheduler->blocked_queue_head);
 }
 
-void scheduler_enqueue_process(scheduler_t *scheduler_queues, struct pbc_queue_item *pcb_el) {
+void scheduler_enqueue_process(scheduler_t *scheduler, struct pbc_queue_item *pcb_el) {
     assert(pcb_el->value->priority >= 0 && pcb_el->value->priority < PRIO_LEVELS);
     ZF_LOGI("Enqueuing process: pid=%d, priority=%d", pcb_el->value->process_id, pcb_el->value->priority);
-    pbc_queue_enqueue(&scheduler_queues->priority_queue_heads[pcb_el->value->priority], pcb_el);
+    pbc_queue_enqueue(&scheduler->priority_queue_heads[pcb_el->value->priority], pcb_el);
 }
 
-struct pbc_queue_item * scheduler_dequeue_process(scheduler_t *scheduler_queues) {
+struct pbc_queue_item * scheduler_dequeue_process(scheduler_t *scheduler) {
     for (int i = 0; i < PRIO_LEVELS; i++) {
-        struct pbc_queue_item *pcb_el = pbc_queue_dequeue(&scheduler_queues->priority_queue_heads[i]);
+        struct pbc_queue_item *pcb_el = pbc_queue_dequeue(&scheduler->priority_queue_heads[i]);
         if (pcb_el != NULL) {
             ZF_LOGI("Dequeued process: pid=%d, priority=%d", pcb_el->value->process_id, pcb_el->value->priority);
             return pcb_el;

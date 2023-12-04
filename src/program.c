@@ -10,6 +10,20 @@
 #include <sys/types.h>
 #include "program.h"
 
+char* program_read_str_param_from_line(char *line) {
+    return line + 2;
+}
+
+int program_read_int_param_from_line(char *line) {
+    char *end;
+    int value = (int)strtol(program_read_str_param_from_line(line), &end, 10);
+    if (*end != '\0') {
+        printf("Invalid numeric parameter: %s\n", line);
+        exit(1);
+    }
+    return value;
+}
+
 program_t *program_get(char *file_name) {
     FILE *file = fopen(file_name, "r");
     if (file == NULL) {
