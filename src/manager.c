@@ -19,17 +19,23 @@ char* read_str_param_from_line(char *line) {
 int read_int_param_from_line(char *line) {
     return atoi(read_str_param_from_line(line));
 }
-void check_time_slice(cpu_t *cpu, pcb_t *pcb, scheduler_t *scheduler){//added - R
-    if (PRIO_LEVELS > pcb->priority && cpu->time_slice == cpu->used_time_slices ) {//check if priority > 3
-        pcb->priority++;
-        context_switch_cpu_to_pcb(cpu, pcb);
+void check_time_slice(cpu_t *cpu, struct pbc_queue_item **current_pcb, scheduler_t *scheduler){//added - R
+    if (PRIO_LEVELS > (*current_pcb)->value->priority && cpu->time_slice == cpu->used_time_slices ) {//check if priority > 3
+        (*current_pcb)->value->priority++;
+        context_switch_cpu_to_pcb(cpu, (*current_pcb)->value);
         struct pbc_queue_item* pcb_el = scheduler_dequeue_process(scheduler);
-        context_switch_pcb_to_cpu(cpu, pcb_el->value);
+        if (pcb_el != NULL) { // only switch if there is another process ready to run
+            context_switch_pcb_to_cpu(cpu, pcb_el->value);
+            scheduler_enqueue_process(scheduler, (*current_pcb));
+            *current_pcb = pcb_el;
+        } else { // if not context switch, reset time slice
+            cpu->used_time_slices = 0;
+        }
     }
 
 }
 //added time - R
-void execute_program_instruction(
+int execute_program_instruction(
         cpu_t *cpu,
         struct pbc_queue_item *pcb_el,
                 scheduler_t *scheduler,
@@ -77,12 +83,7 @@ void execute_program_instruction(
             break;
         case 'E': // terminate
             ZF_LOGI("Terminating process.\n");
-            *turnaround = *turnaround + (pcb_el->value->start_time - time); //TODO: ADD variable to keep track of Turnaround time
-            scheduler_process_free(scheduler, pcb_el);
-            pcb_el = scheduler_dequeue_process(scheduler);
-            assert(pcb_el != NULL);
-            (*processes_ended)++; //added to keep track of total process ended
-            context_switch_pcb_to_cpu(cpu, pcb_el->value);
+            return 1;
             break;
         case 'F': // fork
             ZF_LOGI("Forking process.\n");
@@ -92,24 +93,23 @@ void execute_program_instruction(
                     scheduler,
                     pcb_el->value->process_id,
                     program_copy(cpu->program),
+                    cpu->state,
                     cpu->program_counter + 1,
                     time                    //pass current system time
                     );
             cpu->program_counter += read_int_param_from_line(instruction) + 1;
-
-
             break;
         case 'R': // load another process from a file
             str_param = read_str_param_from_line(instruction);
             ZF_LOGI("Loading another process from \"%s\".\n", str_param);
-            free(cpu->program);
+            program_t* temp_program = cpu->program;
             // TODO: ask "what does int undefined mean?"
             cpu->program = program_get(str_param);
             cpu->program_counter = 0;
-            // TODO: run next command
-            execute_program_instruction(cpu, pcb_el, scheduler, time, turnaround, processes_ended); // TODO: ask morty
-            return;
+            program_free(temp_program);
+            return execute_program_instruction(cpu, pcb_el, scheduler, time, turnaround, processes_ended); // TODO: ask morty
     }
+    return 0;
     // TODO: increment machine time
 //    cpu->used_time_slices++;
     //        cpu.time_slice
@@ -130,21 +130,30 @@ void manger_run(int stdin_fd) {
     cpu_t cpu;
     scheduler_t scheduler;
     int time = 0;
-    int turn_around = 0;
+    int total_turnaround = 0;
     int processes_ended = 0;
     struct pbc_queue_item *current_process = NULL;
     struct pbc_queue_item *unblocked_pcb_el = NULL;
 
     scheduler_init(&scheduler);
-    scheduler_process_init(&scheduler, 0, program_get("init"), 0, time);
+    scheduler_process_init(&scheduler, 0, program_get("init"), 0, 0, time);
 
     current_process = scheduler_dequeue_process(&scheduler);
     context_switch_pcb_to_cpu(&cpu, current_process->value);
 
     char *line;
     size_t len = 32;
-    FILE *in = fdopen(stdin_fd, "r");
+//    FILE *in = fdopen(stdin_fd, "r");
+    FILE *in = stdin;
     int running = 1;
+
+    line = (char *)malloc(len * sizeof(char));
+    if( line == NULL)
+    {
+        perror("Unable to allocate buffer");
+        exit(1);
+    }
+    int isTerminated;
 
     while (running && !feof(in)) {
         printf("Enter command: ");
@@ -152,10 +161,20 @@ void manger_run(int stdin_fd) {
         printf("%s", line);
         switch (line[0]) {
             case 'Q': // end of one unit of time added Turnaround time and processed ended
-                execute_program_instruction(&cpu, current_process, &scheduler, time, &turn_around, &processes_ended);
-                time++;
-                cpu.used_time_slices++;
-                check_time_slice(&cpu, current_process->value, &scheduler); //checking for preempting of program
+                isTerminated = execute_program_instruction(&cpu, current_process, &scheduler, time, &total_turnaround, &processes_ended);
+                if (isTerminated) {
+                    total_turnaround = total_turnaround + (time - current_process->value->start_time); //TODO: ADD variable to keep track of Turnaround time
+                    scheduler_process_free(&scheduler, current_process);
+                    current_process = scheduler_dequeue_process(&scheduler);
+                    assert(current_process != NULL);
+                    processes_ended++; //added to keep track of total process ended
+                    context_switch_pcb_to_cpu(&cpu, current_process->value);
+                    time++;
+                } else {
+                    time++;
+                    cpu.used_time_slices++;
+                    check_time_slice(&cpu, &current_process, &scheduler); //checking for preempting of program
+                }
                 break;
             case 'U': // unblock the first simulated process in blocked queue
                 unblocked_pcb_el = scheduler_unblock_process(&scheduler);
@@ -170,13 +189,13 @@ void manger_run(int stdin_fd) {
                 // manager spawns a new reporter process.
                 printf("Not implemented.\n");
                 break;
-            case 'T': // print the average turnaround time and terminate the system
+            case 'T': // print the average total_turnaround time and terminate the system
                 // TODO: ask about storage of processes in pcb table
                 // On receiving a T command, the process
                 // manager first spawns a reporter process and then terminates after termination of the
                 // reporter process. The process manager ensures that no more than one reporter process is
                 // running at any moment.
-                printf("Average turnaround time: %d", (turn_around/processes_ended));//calculate average time
+                printf("Average total_turnaround time: %d", (total_turnaround / processes_ended));//calculate average time
                 running = 0;
                 break;
             default:

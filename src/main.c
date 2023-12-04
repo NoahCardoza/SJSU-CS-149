@@ -43,6 +43,8 @@ int fork_and_pipe() {
 int main(int argc, char **argv) {
 //    fork_and_pipe();
 
+    freopen("../scripts/cmds", "r", stdin);
+
     manger_run(0);
 
     return 0;

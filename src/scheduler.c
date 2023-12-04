@@ -36,9 +36,9 @@ struct pbc_queue_item * scheduler_unblock_process(scheduler_t *scheduler) {
     return pbc_queue_dequeue(&scheduler->blocked_queue_head);
 }
 
-void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int program_counter, int time) {
+void scheduler_process_init(scheduler_t *scheduler, int parent_pid, program_t *program, int state, int program_counter, int time) {
     // TODO: init start time
-    pcb_t *pcb = pcb_create(parent_pid, program, program_counter, time);
+    pcb_t *pcb = pcb_create(parent_pid, program, state, program_counter, time);
 
     struct pbc_queue_item *el = (struct pbc_queue_item *) malloc(sizeof(struct pbc_queue_item));
 

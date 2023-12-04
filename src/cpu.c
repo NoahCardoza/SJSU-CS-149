@@ -21,6 +21,7 @@ void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb) {
 void context_switch_cpu_to_pcb(cpu_t *cpu, pcb_t *pcb) {
     ZF_LOGI("Context switching from CPU to PCB:\n\tprocess_id: %d\n", pcb->process_id);
     pcb->program_counter = cpu->program_counter;
+    pcb->program = cpu->program;
     pcb->state = cpu->state;
     pcb->cpu_time_used += cpu->used_time_slices;
 }
