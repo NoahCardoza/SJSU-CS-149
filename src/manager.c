@@ -37,6 +37,7 @@ void check_time_slice(cpu_t *cpu, struct pbc_queue_node **current_pcb, scheduler
         scheduler_enqueue_process(scheduler, (*current_pcb));
         struct pbc_queue_node* pcb_el = scheduler_dequeue_process(scheduler);
         if (pcb_el == *current_pcb) { // if not context switch, reset time slice
+            pcb_el->value->cpu_time_used += cpu->used_time_slices; // update cpu used time when not context switching
             cpu->used_time_slices = 0;
             cpu->time_slice = 1 << (*current_pcb)->value->priority;
             ZF_LOGI("Refreshing time slice: pid=%d, priority=%d, quantum=%d", (*current_pcb)->value->process_id, (*current_pcb)->value->priority, cpu->time_slice);
@@ -116,6 +117,7 @@ void manger_run() {
     while (running && !feof(stdin)) {
         printf("$ ");
         getline(&line, &len, stdin);
+        ZF_LOGI("System time: %d", manager.time);
         switch (line[0]) {
             case 'Q': // end of one unit of time added Turnaround time and processed ended
                 manger_handel_command_process_time_slice(&manager);
@@ -212,9 +214,17 @@ void manager_handel_interrupt(manager_t *manager) {
     if (manager->cpu.interrupt_id != INTERRUPT_NONE) {
         interrupt_vector_table[manager->cpu.interrupt_id - 1](manager);
     }
-    if (manager->cpu.interrupt_id == INTERRUPT_NONE || manager->cpu.interrupt_id > 2) {
-        manager->time++;
+
+    manager->time++;
+
+    // interrupt block already does context switch
+    // we don't want to increment time slice on the new process
+    if (manager->cpu.interrupt_id != INTERRUPT_BLOCK) {
         manager->cpu.used_time_slices++;
+    }
+
+    // on none, fork, load
+    if (manager->cpu.interrupt_id == INTERRUPT_NONE || manager->cpu.interrupt_id > 2) {
         check_time_slice(&manager->cpu, &manager->current_process, &manager->scheduler); //checking for preempting of program
     }
 
@@ -223,7 +233,7 @@ void manager_handel_interrupt(manager_t *manager) {
 
 void manager_handel_interrupt_terminate(manager_t *manager) {
     ZF_LOGI("Terminating process.");
-    manager->time++; // TODO: are we sure this belongs here?
+
     manager->processes_ended++; //added to keep track of total process ended
     manager->total_turnaround += manager_calculate_turn_around_time(manager);
 
