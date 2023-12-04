@@ -4,6 +4,8 @@
 
 #ifndef SJSU_CS_149_CPU_H
 #define SJSU_CS_149_CPU_H
+
+#include <stddef.h>
 #include "cpu.h"
 #include "pcb.h"
 
@@ -33,6 +35,14 @@ typedef struct {
      * The number of time slices that the process has used.
      */
     int used_time_slices;
+    /**
+     * The interrupt id.
+     */
+    int interrupt_id;
+    /**
+     * The interrupt argument.
+     */
+    size_t interrupt_argument;
 } cpu_t;
 
 void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb);

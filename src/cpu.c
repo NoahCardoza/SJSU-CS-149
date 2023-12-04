@@ -4,7 +4,6 @@
 
 #include "pcb.h"
 #include "cpu.h"
-#include "config.h"
 #include "../libs/zf_log/zf_log.h"
 
 
