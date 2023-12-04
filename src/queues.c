@@ -47,8 +47,8 @@ struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head) {
     return pcb_el;
 }
 
-void print_running_process(int pid, int ppid, int value, int start_time, int used_time) {
-    printf("%d, %d, %d, %d, %d", pid, ppid, value, start_time, used_time);
+void print_running_process(int pid, int ppid, int priority, int value, int start_time, int used_time) {
+    printf("%d, %d, %d, %d, %d, %d\n", pid, ppid, priority, value, start_time, used_time);
 }
 
 

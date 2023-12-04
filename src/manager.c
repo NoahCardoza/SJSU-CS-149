@@ -12,6 +12,8 @@
 #include "scheduler.h"
 #include "../libs/zf_log/zf_log.h"
 
+
+void print_system_status(int time, pcb_t* current_process, scheduler_t *scheduler);
 char* read_str_param_from_line(char *line) {
     return line + 2;
 }
@@ -187,7 +189,7 @@ void manger_run(int stdin_fd) {
             case 'P': // print the current state of the system
                 // On receiving a P command, the process
                 // manager spawns a new reporter process.
-                printf("Not implemented.\n");
+                print_system_status(time, current_process->value, &scheduler);
                 break;
             case 'T': // print the average total_turnaround time and terminate the system
                 // TODO: ask about storage of processes in pcb table
@@ -207,32 +209,27 @@ void manger_run(int stdin_fd) {
     free(line);
 }
 
-void print_system_status(int time, struct pbc_queue_item_head *running_queue,
-                         struct pbc_queue_item_head *blocked_queue,
-                         struct pbc_queue_item_head *ready_queues[]) {
-
+void print_system_status(int time, pcb_t* current_process, scheduler_t *scheduler) {
+    printf("****************************************************************\n"
+           "The current system state is as follows:\n"
+           "****************************************************************\n");
     printf("CURRENT TIME: %d\n", time);
 
     printf("RUNNING PROCESS:\n");
-    struct pbc_queue_item *running_process = STAILQ_FIRST(&running_queue->head);
-    if (running_process) {
-        print_running_process(running_process->value->value->process_id,
-                              running_process->value->value->parent_process_id,
-                              running_process->value->value->priority,
-                              running_process->value->value->value,
-                              running_process->value->value->start_time,
-                              running_process->value->value->cpu_time_used);
-    } else {
-        printf("No running process\n");
-    }
+    print_running_process(current_process->process_id,
+                          current_process->parent_process_id,
+                          current_process->priority,
+                          current_process->state,
+                          current_process->start_time,
+                          current_process->cpu_time_used);
 
     printf("BLOCKED PROCESSES:\n");
-    print_blocked_process(blocked_queue);
+    print_blocked_process(&scheduler->blocked_queue_head);
 
     printf("PROCESSES READY TO EXECUTE:\n");
-    for (int priority = 0; priority < 4; ++priority) {
+    for (int priority = 0; priority < PRIO_LEVELS; ++priority) {
         printf("Queue of processes with priority %d:\n", priority);
-        struct pbc_queue_item_head *ready_queue = ready_queues[priority];
-        print_pcb_info(ready_queue);
+        print_pcb_info(&scheduler->priority_queue_heads[priority]);
     }
+    printf("****************************************************************\n");
 }
