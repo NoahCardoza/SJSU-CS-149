@@ -55,3 +55,12 @@ void print_blocked_process(struct pbc_queue_item *head) {
     STAILQ_FOREACH(np, &head, entries);
         printf("%i\n", np->data);
 }
+
+void print_pcb_info(struct pbc_queue_item_head *head) {
+
+    STAILQ_FOREACH(np, &head, entries) {
+        
+        printf("PID: %d, PPID: %d, Value: %d, Start Time: %ld, CPU Time Used: %f, Priority: %d\n",
+               pcb->pid, pcb->ppid, pcb->value, pcb->start_time, pcb->cpu_time_used, pcb->priority);
+    }
+}
