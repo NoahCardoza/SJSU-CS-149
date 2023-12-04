@@ -22,15 +22,19 @@ char* read_str_param_from_line(char *line) {
 int read_int_param_from_line(char *line) {
     return atoi(read_str_param_from_line(line));
 }
-void check_time_slice(cpu_t *cpu, pcb_t *pcb){//added - R
+void check_time_slice(cpu_t *cpu, pcb_t *pcb, shceduler_t *scheduler){//added - R
     if (ARRAY_SIZE > pcb->priority && cpu.time_slice == cpu.used_time_slices ) {//check if priority > 3
         pcb->priority++;
         context_switch_cpu_to_pcb(cpu, pcb);
+        pcb_el = scheduler_dequeue_process(scheduler);
+        context_switch_pcb_to_cpu(cpu, pcb_el->value);
     }
 
 }
 //added time - R
-void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, scheduler_t *scheduler, int time) {
+void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, scheduler_t *scheduler, int time, int turnaround,
+        processes_ended) {
+
     assert(pcb_el != NULL);
     int int_param;
     char *str_param;
@@ -70,9 +74,11 @@ void execute_program_instruction(cpu_t *cpu, struct pbc_queue_item *pcb_el, sche
             break;
         case 'E': // terminate
             ZF_LOGI("Terminating process.\n");
+            turnaround = (pcb_el->value->start_time - time);//TODO: ADD variable to keep track of Turnaround time
             scheduler_process_free(scheduler, pcb_el);
             pcb_el = scheduler_dequeue_process(scheduler);
-            assert(pcb_el != NULL);//TODO: ADD variable to keep track of Turnaround time
+            assert(pcb_el != NULL);
+            processes_ended++; //added to keep track of total process ended
             context_switch_pcb_to_cpu(cpu, pcb_el->value);
             break;
         case 'F': // fork
@@ -121,6 +127,8 @@ void manger_run(int stdin_fd) {
     cpu_t cpu;
     scheduler_t scheduler;
     int time = 0;
+    int turn_around = 0;
+    int processes_ended = 0;
     struct pbc_queue_item *current_process = NULL;
     struct pbc_queue_item *unblocked_pcb_el = NULL;
 
@@ -139,11 +147,11 @@ void manger_run(int stdin_fd) {
         getline(&line, &len, in);
         printf("%s", line);
         switch (line[0]) {
-            case 'Q': // end of one unit of time
-                execute_program_instruction(&cpu, current_process, &scheduler, time);
+            case 'Q': // end of one unit of time added Turnaround time and processed ended
+                execute_program_instruction(&cpu, current_process, &scheduler, time, turn_around, processes_ended);
                 time++:
                 cpu.used_time_slices++;
-                check_time_slice(&cpu, pcb); //checking for preempting of program
+                check_time_slice(&cpu, pcb, &scheduler); //checking for preempting of program
                 break;
             case 'U': // unblock the first simulated process in blocked queue
                 unblocked_pcb_el = scheduler_unblock_process(&scheduler);
@@ -159,6 +167,7 @@ void manger_run(int stdin_fd) {
                 printf("Not implemented.\n");
                 break;
             case 'T': // print the average turnaround time and terminate the system
+                printf("Average turnaround time: %d", (turn_around/processes_ended));//calculate average time
                 // TODO: ask about storage of processes in pcb table
                 // On receiving a T command, the process
                 // manager first spawns a reporter process and then terminates after termination of the
