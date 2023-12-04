@@ -43,10 +43,12 @@ int fork_and_pipe() {
 int main(int argc, char **argv) {
     chdir("../tests/t1");
     freopen("./cmds", "r", stdin);
-    if (USE_PROCESS_FOR_MANAGER) {
+
+    #if FEATURE_PROCESS_FOR_MANAGER
         fork_and_pipe();
-    } else {
-        manger_run(0);
-    }
+    #else
+        manger_run();
+    #endif
+
     return 0;
 }
