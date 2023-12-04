@@ -74,9 +74,8 @@ void manager_init(manager_t *manager);
 
 /**
  * Runs the manager.
- * @param fd The file descriptor to read commands from.
  */
-void manger_run(int fd);
+void manger_run();
 
 /**
  * Handles the process time slice (Q) command.

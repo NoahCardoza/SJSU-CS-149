@@ -91,7 +91,7 @@ void manger_handel_command_process_time_slice(manager_t *manager) {
     manager_handel_interrupt(manager);
 }
 
-void manger_run(int fd) {
+void manger_run() {
     manager_t manager;
     manager_init(&manager);
 
@@ -103,7 +103,6 @@ void manger_run(int fd) {
 
     char *line;
     size_t len = 32;
-    FILE *in = fdopen(fd, "r");
     int running = 1;
 
     line = (char *)malloc(len * sizeof(char));
@@ -113,9 +112,9 @@ void manger_run(int fd) {
         exit(1);
     }
 
-    while (running && !feof(in)) {
+    while (running && !feof(stdin)) {
         printf("$ ");
-        getline(&line, &len, in);
+        getline(&line, &len, stdin);
         switch (line[0]) {
             case 'Q': // end of one unit of time added Turnaround time and processed ended
                 manger_handel_command_process_time_slice(&manager);

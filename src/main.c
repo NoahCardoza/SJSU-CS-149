@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include "manager.h"
 
 /**
@@ -14,26 +15,25 @@ int fork_and_pipe() {
         perror("pipe");
     }
 
+    fflush(stdin);
+    fflush(stdout);
+    fflush(stderr);
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
     } else if (pid == 0) {
-        close(fd[0]);
-        manger_run(fd[1]);
-    } else {
         close(fd[1]);
-        char buf[1024];
+        dup2(fd[0], 0);
+        manger_run();
+    } else {
+        close(fd[0]);
+        close(1);
+        close(2);
+        char line[LINE_BUFFER_SIZE];
 
-        while (1) {
-            // TODO: use get line and read at a rate of 1 line per second
-            int n = read(0, buf, sizeof(buf));
-            if (n < 0) {
-                perror("read");
-            } else if (n == 0) {
-                break;
-            } else {
-                write(fd[1], buf, n);
-            }
+        while (fgets(line, LINE_BUFFER_SIZE, stdin)) {
+            write(fd[1], line, strlen(line));
+            sleep(1);
         }
     }
 
@@ -41,11 +41,12 @@ int fork_and_pipe() {
 }
 
 int main(int argc, char **argv) {
-//    fork_and_pipe();
     chdir("../tests/00");
     freopen("./cmds", "r", stdin);
-
-    manger_run(0);
-
+    if (USE_PROCESS_FOR_MANAGER) {
+        fork_and_pipe();
+    } else {
+        manger_run(0);
+    }
     return 0;
 }
