@@ -46,3 +46,12 @@ struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head) {
     free(el);
     return pcb_el;
 }
+
+void print_running_process(int pid, int ppid, int value, int start_time, int used_time) {
+    printf("Process ID: %d, Parent process ID: %d, Value: %d, Process start time: %d, Currently used time: %d", pid, ppid, value, start_time, used_time);
+}
+
+void print_blocked_process(struct pbc_queue_item *head) {
+    STAILQ_FOREACH(np, &head, entries)
+        printf("%i\n", np->data);
+}
