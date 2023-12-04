@@ -48,19 +48,24 @@ struct pbc_queue_item *pbc_queue_dequeue(struct pbc_queue_item_head *head) {
 }
 
 void print_running_process(int pid, int ppid, int value, int start_time, int used_time) {
-    printf("Process ID: %d, Parent process ID: %d, Value: %d, Process start time: %d, Currently used time: %d", pid, ppid, value, start_time, used_time);
+    printf("%d, %d, %d, %d, %d", pid, ppid, value, start_time, used_time);
 }
 
-void print_blocked_process(struct pbc_queue_item *head) {
-    STAILQ_FOREACH(np, &head, entries);
-        printf("%i\n", np->data);
+
+void print_blocked_process(struct pbc_queue_item_head *head) {
+    struct pbc_queue_item_item *pcb;
+
+    STAILQ_FOREACH(pcb, head, entries) {
+        printf("%d, %d, %d, %d, %d, %d\n",
+               pcb->value->value->process_id, pcb->value->value->parent_process_id, pcb->value->value->priority, pcb->value->value->state, pcb->value->value->start_time, pcb->value->value->cpu_time_used);
+    }
 }
 
 void print_pcb_info(struct pbc_queue_item_head *head) {
+    struct pbc_queue_item_item *pcb;
 
-    STAILQ_FOREACH(np, &head, entries) {
-        
-        printf("PID: %d, PPID: %d, Value: %d, Start Time: %ld, CPU Time Used: %f, Priority: %d\n",
-               pcb->pid, pcb->ppid, pcb->value, pcb->start_time, pcb->cpu_time_used, pcb->priority);
+    STAILQ_FOREACH(pcb, head, entries) {
+        printf("%d, %d, %d, %d, %d\n",
+               pcb->value->value->process_id, pcb->value->value->parent_process_id, pcb->value->value->state, pcb->value->value->start_time, pcb->value->value->cpu_time_used);
     }
 }
