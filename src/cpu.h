@@ -45,13 +45,48 @@ typedef struct {
     size_t interrupt_argument;
 } cpu_t;
 
+
+/**
+ * Context switch PCB to CPU.
+ * @param cpu The CPU to context switch to.
+ * @param pcb The PCB to context switch from.
+ */
 void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb);
 
+/**
+ * Context switch CPU to PCB.
+ * @param cpu The CPU to context switch from.
+ * @param pcb The PCB to context switch to.
+ */
 void context_switch_cpu_to_pcb(cpu_t *cpu, pcb_t *pcb);
 
+/**
+ * Helper function to configure interrupt flags on the CPU.
+ * @param cpu The CPU to configure.
+ * @param interrupt_id The interrupt id.
+ * @param interrupt_argument The optional interrupt argument.
+ */
 void cpu_set_interrupt(cpu_t *cpu, int interrupt_id, size_t interrupt_argument);
-void cpu_state_set(cpu_t *cpu, int state);
-void cpu_state_add(cpu_t *cpu, int state);
-void cpu_state_sub(cpu_t *cpu, int state);
+
+/**
+ * Sets the state of the single CPU register to value.
+ * @param cpu The CPU to update.
+ * @param value The value to set.
+ */
+void cpu_state_set(cpu_t *cpu, int value);
+
+/**
+ * Adds value to the state of the single CPU register.
+ * @param cpu The CPU to update.
+ * @param value The value to add.
+ */
+void cpu_state_add(cpu_t *cpu, int value);
+
+/**
+ * Subtracts value from the state of the single CPU register.
+ * @param cpu The CPU to update.
+ * @param value The value to subtract.
+ */
+void cpu_state_sub(cpu_t *cpu, int value);
 
 #endif //SJSU_CS_149_CPU_H

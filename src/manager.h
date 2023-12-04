@@ -49,6 +49,9 @@
  */
 #define INSTRUCTION_LOAD 'R'
 
+/**
+ * Used to minimize the number of arguments passed to functions.
+ */
 typedef struct  {
     cpu_t cpu;
     scheduler_t scheduler;
@@ -58,27 +61,83 @@ typedef struct  {
     struct pbc_queue_node *current_process;
 } manager_t;
 
+/**
+ * Used to create the IVT.
+ */
 typedef void manager_handel_interrupt_f(manager_t *);
 
-void manger_run(int stdin_fd);
-
-void manager_handel_interrupt(manager_t *manager);
-
-void manager_unblock_process(scheduler_t *scheduler);
-
+/**
+ * Initializes a manager_t struct.
+ * @param manager
+ */
 void manager_init(manager_t *manager);
 
-void manager_print_system_state(manager_t *manager);
+/**
+ * Runs the manager.
+ * @param fd The file descriptor to read commands from.
+ */
+void manger_run(int fd);
 
+/**
+ * Handles the process time slice (Q) command.
+ * @param manager The state of the manager.
+ */
+void manger_handel_command_process_time_slice(manager_t *manager);
+
+/**
+ * Handles the unblock process (U) command.
+ * @param manager The state of the manager.
+ */
+void manager_handel_command_unblock_process(scheduler_t *scheduler);
+
+/**
+ * Handles the print state (P) command.
+ * @param manager The state of the manager.
+ */
+void manager_handel_command_print_system_state(manager_t *manager);
+
+/**
+ * Handles the terminate (T) command.
+ * @param manager The state of the manager.
+ */
+int manager_handel_command_terminate(manager_t *manager);
+
+/**
+ * Calculates the turn around time of the current process on the CPU.
+ * @param manager The state of the manager.
+ * @return The turn around time of the current process.
+ */
 int manager_calculate_turn_around_time(manager_t *manager);
 
-int manager_terminate(manager_t *manager);
+/**
+ * Handles the interrupts. Checks if an interrupt has occurred and
+ * calls the appropriate interrupt handler using the IVT.
+ * @param manager The state of the manager.
+ */
+void manager_handel_interrupt(manager_t *manager);
 
+/**
+ * Handles the load interrupt.
+ * @param manager The state of the manager.
+ */
 void manager_handel_interrupt_load(manager_t *manager);
 
+/**
+ * Handles the fork interrupt.
+ * @param manager The state of the manager.
+ */
 void manager_handel_interrupt_fork(manager_t *manager);
 
+/**
+ * Handles the block interrupt.
+ * @param manager The state of the manager.
+ */
 void manager_handel_interrupt_block(manager_t *manager);
 
+/**
+ * Handles the terminate interrupt.
+ * @param manager The state of the manager.
+ */
 void manager_handel_interrupt_terminate(manager_t *manager);
+
 #endif //SJSU_CS_149_MANAGER_H

@@ -2,19 +2,9 @@
 // Created by Vulcan on 10/31/23.
 //
 
-#include "scheduler.h"
-#include "config.h"
-#include "manager.h"
-#include <strings.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stddef.h>
 #include "pcb.h"
 #include "cpu.h"
 #include "../libs/zf_log/zf_log.h"
-
-
 
 void context_switch_pcb_to_cpu(cpu_t *cpu, pcb_t *pcb) {
     ZF_LOGI("Context switching from PCB to CPU: process_id = %d", pcb->process_id);
@@ -38,17 +28,17 @@ void cpu_set_interrupt(cpu_t *cpu, int interrupt_id, size_t interrupt_argument) 
     cpu->interrupt_argument = interrupt_argument;
 }
 
-void cpu_state_set(cpu_t *cpu, int state) {
-    ZF_LOGI("Setting CPU value to %d.", state);
-    cpu->state = state;
+void cpu_state_set(cpu_t *cpu, int value) {
+    ZF_LOGI("Setting CPU value to %d.", value);
+    cpu->state = value;
 }
 
-void cpu_state_add(cpu_t *cpu, int state) {
-    ZF_LOGI("Adding %d to CPU value.", state);
-    cpu->state += state;
+void cpu_state_add(cpu_t *cpu, int value) {
+    ZF_LOGI("Adding %d to CPU value.", value);
+    cpu->state += value;
 }
 
-void cpu_state_sub(cpu_t *cpu, int state) {
-    ZF_LOGI("Subtracting %d from CPU value.", state);
-    cpu->state -= state;
+void cpu_state_sub(cpu_t *cpu, int value) {
+    ZF_LOGI("Subtracting %d from CPU value.", value);
+    cpu->state -= value;
 }

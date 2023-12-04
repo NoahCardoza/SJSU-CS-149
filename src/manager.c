@@ -76,7 +76,7 @@ void execute_program_instruction(manager_t *manager) {
     }
 }
 
-void manger_process_time_slice(manager_t *manager) {
+void manger_handel_command_process_time_slice(manager_t *manager) {
     int interrupt;
 
     if (manager->current_process == NULL) {
@@ -91,7 +91,7 @@ void manger_process_time_slice(manager_t *manager) {
     manager_handel_interrupt(manager);
 }
 
-void manger_run(int stdin_fd) {
+void manger_run(int fd) {
     manager_t manager;
     manager_init(&manager);
 
@@ -103,7 +103,7 @@ void manger_run(int stdin_fd) {
 
     char *line;
     size_t len = 32;
-    FILE *in = fdopen(stdin_fd, "r");
+    FILE *in = fdopen(fd, "r");
     int running = 1;
 
     line = (char *)malloc(len * sizeof(char));
@@ -118,16 +118,16 @@ void manger_run(int stdin_fd) {
         getline(&line, &len, in);
         switch (line[0]) {
             case 'Q': // end of one unit of time added Turnaround time and processed ended
-                manger_process_time_slice(&manager);
+                manger_handel_command_process_time_slice(&manager);
                 break;
             case 'U': // unblock the first simulated process in blocked queue
-                manager_unblock_process(&manager.scheduler);
+                manager_handel_command_unblock_process(&manager.scheduler);
                 break;
             case 'P': // print the current state of the system
-                manager_print_system_state(&manager);
+                manager_handel_command_print_system_state(&manager);
                 break;
             case 'T': // print the average total_turnaround time and terminate the system
-                running = manager_terminate(&manager);
+                running = manager_handel_command_terminate(&manager);
                 break;
             default:
                 printf("Invalid command.\n");
@@ -145,7 +145,7 @@ void manger_run(int stdin_fd) {
  * running at any moment.
  * @param manager
  */
-int manager_terminate(manager_t *manager) {
+int manager_handel_command_terminate(manager_t *manager) {
     ZF_LOGI("Printing turn around time.");
 
     if (manager->processes_ended == 0) {
@@ -154,7 +154,7 @@ int manager_terminate(manager_t *manager) {
     }
 
     // TODO: spawn reporter process
-    manager_print_system_state(manager);
+    manager_handel_command_print_system_state(manager);
 
     printf("Average total_turnaround time: %d", (manager->total_turnaround / manager->processes_ended)); // calculate average time
 
@@ -165,7 +165,7 @@ int manager_terminate(manager_t *manager) {
  * On receiving a P command, the process manager spawns a new reporter process.
  * @param manager
  */
-void manager_print_system_state(manager_t *manager) {
+void manager_handel_command_print_system_state(manager_t *manager) {
     ZF_LOGI("Printing system status.");
     // TODO: spawn reporter process
     print_system_status((*manager).time, (*manager).current_process != NULL ? (*manager).current_process->value : NULL, &(*manager).scheduler);
@@ -179,7 +179,7 @@ void manager_init(manager_t *manager) {
     scheduler_init(&manager->scheduler);
 }
 
-void manager_unblock_process(scheduler_t *scheduler) {
+void manager_handel_command_unblock_process(scheduler_t *scheduler) {
     struct pbc_queue_node *unblocked_pcb_el = NULL;
 
     unblocked_pcb_el = scheduler_unblock_process(scheduler);
