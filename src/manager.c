@@ -206,3 +206,33 @@ void manger_run(int stdin_fd) {
 
     free(line);
 }
+
+void print_system_status(int time, struct pbc_queue_item_head *running_queue,
+                         struct pbc_queue_item_head *blocked_queue,
+                         struct pbc_queue_item_head *ready_queues[]) {
+
+    printf("CURRENT TIME: %d\n", time);
+
+    printf("RUNNING PROCESS:\n");
+    struct pbc_queue_item *running_process = STAILQ_FIRST(&running_queue->head);
+    if (running_process) {
+        print_running_process(running_process->value->value->process_id,
+                              running_process->value->value->parent_process_id,
+                              running_process->value->value->priority,
+                              running_process->value->value->value,
+                              running_process->value->value->start_time,
+                              running_process->value->value->cpu_time_used);
+    } else {
+        printf("No running process\n");
+    }
+
+    printf("BLOCKED PROCESSES:\n");
+    print_blocked_process(blocked_queue);
+
+    printf("PROCESSES READY TO EXECUTE:\n");
+    for (int priority = 0; priority < 4; ++priority) {
+        printf("Queue of processes with priority %d:\n", priority);
+        struct pbc_queue_item_head *ready_queue = ready_queues[priority];
+        print_pcb_info(ready_queue);
+    }
+}
