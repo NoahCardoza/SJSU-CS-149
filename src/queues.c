@@ -50,7 +50,7 @@ struct pbc_queue_node *pbc_queue_dequeue(struct pbc_nested_queue_head *head) {
 void pbc_queue_print(struct pbc_nested_queue_head *head, int include_priority) {
     struct pbc_nested_queue_node *pcb;
     if (head->stqh_first == NULL) {
-        printf("Queue is empty.\n");
+        printf("| Queue is empty.                                                 |\n");
         return;
     }
 

@@ -7,6 +7,7 @@
 #include "program.h"
 #include "scheduler.h"
 #include "cpu.h"
+#include <pthread.h>
 
 #define INTERRUPT_NONE 0
 #define INTERRUPT_TERMINATE 1
@@ -59,6 +60,7 @@ typedef struct  {
     int total_turnaround;
     int processes_ended;
     struct pbc_queue_node *current_process;
+    pthread_mutex_t reporter_mutex;
 } manager_t;
 
 /**
@@ -106,7 +108,7 @@ int manager_handel_command_terminate(manager_t *manager);
  * @param manager The state of the manager.
  * @return The turn around time of the current process.
  */
-int manager_calculate_turn_around_time(manager_t *manager);
+int manager_calculate_turnaround_time(manager_t *manager);
 
 /**
  * Handles the interrupts. Checks if an interrupt has occurred and

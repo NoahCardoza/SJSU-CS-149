@@ -52,3 +52,11 @@ void cpu_state_sub(cpu_t *cpu, int value) {
     ZF_LOGI("Subtracting %d from CPU value.", value);
     cpu->state -= value;
 }
+
+void cpu_print(cpu_t *cpu) {
+    printf("+-----------------------------------------------------------------+\n");
+    printf("| PC |    State | Max Slices | Used Slices | INT |        INT ARG |\n");
+    printf("+-----------------------------------------------------------------+\n");
+    printf("| %2d | %8d | %10d | %11d | %3d | 0x%012zx |\n", cpu->program_counter, cpu->state, cpu->time_slice, cpu->used_time_slices, cpu->interrupt_id, cpu->interrupt_argument);
+    printf("+-----------------------------------------------------------------+\n");
+}

@@ -36,16 +36,18 @@ void pcb_free(pcb_t *pcb) {
 
 // TODO: print these it table format
 void pcb_print_header(int include_priority) {
+    printf("+-----------------------------------------------------------------+\n");
     if (include_priority) {
-        printf("process_id, parent_process_id, priority, state, start_time, cpu_time_used\n");
+        printf("|  PID | PPID | Priority |    State | Start Time | CPU Time Used  |\n");
     } else {
-        printf("process_id, parent_process_id, state, start_time, cpu_time_used\n");
+        printf("|  PID |            PPID |    State | Start Time | CPU Time Used  |\n");
     }
+    printf("+-----------------------------------------------------------------+\n");
 }
 
 void pcb_print(pcb_t *pcb, int include_priority) {
     if (include_priority) {
-        printf("%d, %d, %d, %d, %d, %d\n",
+        printf("|  %3d | %4d | %8d | %8d | %10d | %13d  |\n",
                pcb->process_id,
                pcb->parent_process_id,
                pcb->priority,
@@ -53,7 +55,7 @@ void pcb_print(pcb_t *pcb, int include_priority) {
                pcb->start_time,
                pcb->cpu_time_used);
     } else {
-        printf("%d, %d, %d, %d, %d\n",
+        printf("|  %3d | %15d | %8d | %10d | %13d |\n",
                pcb->process_id,
                pcb->parent_process_id,
                pcb->state,

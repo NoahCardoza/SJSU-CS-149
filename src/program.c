@@ -39,7 +39,6 @@ program_t *program_get(char *file_name) {
         exit(1);
     }
 
-    char** tmp;
     program->lines = malloc(sizeof(char *) * 32);
     program->count = 0;
     size_t len;
@@ -75,6 +74,7 @@ program_t *program_get(char *file_name) {
         perror("realloc");
         exit(1);
     }
+
     fclose(file);
     return program;
 }

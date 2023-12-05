@@ -88,6 +88,7 @@ void manger_handel_command_process_time_slice(manager_t *manager) {
         context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
     }
 
+    manager->cpu.interrupt_id = INTERRUPT_NONE;
     execute_program_instruction(manager);
     manager_handel_interrupt(manager);
 }
@@ -162,7 +163,7 @@ int manager_handel_command_terminate(manager_t *manager) {
         print_system_status(manager);
     #endif
 
-    printf("Average total_turnaround time: %.2f", ((float)manager->total_turnaround / (float)manager->processes_ended)); // calculate average time
+    printf("Average Total Turnaround Time: %.2f", ((float)manager->total_turnaround / (float)manager->processes_ended)); // calculate average time
 
     return 0;
 }
@@ -191,6 +192,7 @@ void manager_init(manager_t *manager) {
     manager->current_process = NULL;
     scheduler_init(&manager->scheduler);
     cpu_init(&manager->cpu);
+    pthread_mutex_init(&manager->reporter_mutex, NULL);
 }
 
 void manager_handel_command_unblock_process(scheduler_t *scheduler) {
@@ -205,7 +207,7 @@ void manager_handel_command_unblock_process(scheduler_t *scheduler) {
     }
 }
 
-int manager_calculate_turn_around_time(manager_t *manager) {
+int manager_calculate_turnaround_time(manager_t *manager) {
     return (manager->time - manager->current_process->value->start_time);
 }
 
@@ -226,15 +228,13 @@ void manager_handel_interrupt(manager_t *manager) {
     if (manager->cpu.interrupt_id == INTERRUPT_NONE || manager->cpu.interrupt_id > 2) {
         check_time_slice(&manager->cpu, &manager->current_process, &manager->scheduler); //checking for preempting of program
     }
-
-    manager->cpu.interrupt_id = 0;
 }
 
 void manager_handel_interrupt_terminate(manager_t *manager) {
     ZF_LOGI("Terminating process.");
 
     manager->processes_ended++; //added to keep track of total process ended
-    manager->total_turnaround += manager_calculate_turn_around_time(manager);
+    manager->total_turnaround += manager_calculate_turnaround_time(manager);
 
     scheduler_process_free(&manager->scheduler, manager->current_process);
     manager->current_process = scheduler_dequeue_process(&manager->scheduler);
@@ -251,8 +251,10 @@ void manager_handel_interrupt_block(manager_t *manager) {
     if (manager->current_process->value->priority > 0) {
         manager->current_process->value->priority--;
     }
+
     scheduler_block_process(&manager->scheduler, manager->current_process);
     manager->current_process = scheduler_dequeue_process(&manager->scheduler);
+
     if (manager->current_process != NULL) {
         context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
     }
@@ -291,27 +293,46 @@ void manager_handel_interrupt_load(manager_t *manager) {
 }
 
 void print_system_status(manager_t *manager) {
-    printf("\n****************************************************************\n"
-           "The current system state is as follows:\n"
-           "****************************************************************\n");
-    printf("CURRENT TIME: %d\n", manager->time);
+    #if FEATURE_THREAD_FOR_PRINT_STATE
+        pthread_mutex_lock(&manager->reporter_mutex);
+    #endif
 
-    printf("RUNNING PROCESS:\n");
+    printf("\n*******************************************************************\n"
+             "*              The current system state is as follows             *\n"
+             "*******************************************************************\n"
+             );
+    printf(  "| CURRENT TIME : %3d                                              |\n", manager->time);
+    printf(  "+=================================================================+\n");
+    printf(  "| RUNNING PROCESS                                                 |\n");
+    printf(  "+=================================================================+\n");
     if (manager->current_process != NULL) {
         pcb_print_header(1);
         pcb_print(manager->current_process->value, 1);
+        printf("+-----------------------------------------------------------------+\n");
     } else {
-        printf("No process is currently running.\n");
+        printf("+-----------------------------------------------------------------+\n");
+        printf("| * No process is currently running.                              |\n");
+        printf("+-----------------------------------------------------------------+\n");
     }
 
-    printf("BLOCKED PROCESSES:\n");
+    printf(  "+=================================================================+\n");
+    printf(  "| CPU                                                             |\n");
+    printf(  "+=================================================================+\n");
+    cpu_print(&manager->cpu);
+
+    printf(  "+=================================================================+\n");
+    printf(  "| BLOCKED PROCESSES                                               |\n");
+    printf(  "+=================================================================+\n");
     pbc_queue_print(&manager->scheduler.blocked_queue_head, 1);
 
-    printf("PROCESSES READY TO EXECUTE:\n");
-
     for (int priority = 0; priority < PRIO_LEVELS; ++priority) {
-        printf("Queue of processes with priority %d:\n", priority);
+        printf(  "+=================================================================+\n");
+        printf(  "| Priority Queue %d                                                |\n", priority);
+        printf(  "+=================================================================+\n");
         pbc_queue_print(&manager->scheduler.priority_queue_heads[priority], 0);
     }
-    printf("****************************************************************\n");
+    printf("*******************************************************************\n");
+    #if FEATURE_THREAD_FOR_PRINT_STATE
+        pthread_mutex_unlock(&manager->reporter_mutex);
+    #endif
 }

@@ -90,4 +90,6 @@ void cpu_state_add(cpu_t *cpu, int value);
  */
 void cpu_state_sub(cpu_t *cpu, int value);
 
+void cpu_print(cpu_t *cpu);
+
 #endif //SJSU_CS_149_CPU_H
