@@ -15,7 +15,6 @@ int fork_and_pipe() {
         perror("pipe");
     }
 
-    fflush(stdin);
     fflush(stdout);
     fflush(stderr);
     pid_t pid = fork();

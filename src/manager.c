@@ -138,6 +138,9 @@ void manger_run() {
                 break;
         }
     }
+
+    fflush(stdout);
+    fflush(stderr);
 }
 
 /**
