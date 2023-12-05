@@ -1,0 +1,21 @@
+Expected results: 11.50
+	init file starts:
+
+n =	1400
+	1000
+	962
+	960
+	1000
+	create a sim proc, open file1
+		initial at new proc: 460
+	800
+	block
+	    400
+		500
+		1200
+		end
+    unblock
+	762
+	Parent end.
+		Print state
+		Proc end.

@@ -155,6 +155,8 @@ int manager_handel_command_terminate(manager_t *manager) {
         return 1;
     }
 
+    printf("Average Total Turnaround Time: %.2f", ((float)manager->total_turnaround / (float)manager->processes_ended)); // calculate average time
+
     #if FEATURE_THREAD_FOR_PRINT_STATE
         pthread_t thread;
         pthread_create(&thread, NULL, (void *) print_system_status, manager);
@@ -162,8 +164,6 @@ int manager_handel_command_terminate(manager_t *manager) {
     #else
         print_system_status(manager);
     #endif
-
-    printf("Average Total Turnaround Time: %.2f", ((float)manager->total_turnaround / (float)manager->processes_ended)); // calculate average time
 
     return 0;
 }
