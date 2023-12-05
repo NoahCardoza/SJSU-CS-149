@@ -34,7 +34,6 @@ void pcb_free(pcb_t *pcb) {
     free(pcb);
 }
 
-// TODO: print these it table format
 void pcb_print_header(int include_priority) {
     printf("+-----------------------------------------------------------------+\n");
     if (include_priority) {
@@ -63,3 +62,4 @@ void pcb_print(pcb_t *pcb, int include_priority) {
                pcb->cpu_time_used);
     }
 }
+

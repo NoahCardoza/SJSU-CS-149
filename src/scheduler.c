@@ -14,15 +14,15 @@ void scheduler_init(scheduler_t *scheduler) {
     STAILQ_INIT(&scheduler->blocked_queue_head);
 }
 
-void scheduler_enqueue_process(scheduler_t *scheduler, struct pbc_queue_node *pcb_el) {
+void scheduler_enqueue_process(scheduler_t *scheduler, struct pcb_queue_node *pcb_el) {
     assert(pcb_el->value->priority >= 0 && pcb_el->value->priority < PRIO_LEVELS);
     ZF_LOGI("Enqueuing process: pid=%d, priority=%d", pcb_el->value->process_id, pcb_el->value->priority);
-    pbc_queue_enqueue(&scheduler->priority_queue_heads[pcb_el->value->priority], pcb_el);
+    pcb_queue_enqueue(&scheduler->priority_queue_heads[pcb_el->value->priority], pcb_el);
 }
 
-struct pbc_queue_node * scheduler_dequeue_process(scheduler_t *scheduler) {
+struct pcb_queue_node * scheduler_dequeue_process(scheduler_t *scheduler) {
     for (int i = 0; i < PRIO_LEVELS; i++) {
-        struct pbc_queue_node *pcb_el = pbc_queue_dequeue(&scheduler->priority_queue_heads[i]);
+        struct pcb_queue_node *pcb_el = pcb_queue_dequeue(&scheduler->priority_queue_heads[i]);
         if (pcb_el != NULL) {
             ZF_LOGI("Dequeued process: pid=%d, priority=%d", pcb_el->value->process_id, pcb_el->value->priority);
             return pcb_el;
@@ -32,13 +32,13 @@ struct pbc_queue_node * scheduler_dequeue_process(scheduler_t *scheduler) {
     return NULL;
 }
 
-void scheduler_block_process(scheduler_t *scheduler, struct pbc_queue_node *pcb_el) {
+void scheduler_block_process(scheduler_t *scheduler, struct pcb_queue_node *pcb_el) {
     ZF_LOGI("Blocking process: pid=%d, priority=%d", pcb_el->value->process_id, pcb_el->value->priority);
-    pbc_queue_enqueue(&scheduler->blocked_queue_head, pcb_el);
+    pcb_queue_enqueue(&scheduler->blocked_queue_head, pcb_el);
 }
 
-struct pbc_queue_node * scheduler_unblock_process(scheduler_t *scheduler) {
-    struct pbc_queue_node *item = pbc_queue_dequeue(&scheduler->blocked_queue_head);
+struct pcb_queue_node * scheduler_unblock_process(scheduler_t *scheduler) {
+    struct pcb_queue_node *item = pcb_queue_dequeue(&scheduler->blocked_queue_head);
     if (item == NULL) {
         ZF_LOGI("No processes to unblock.");
     } else {
@@ -47,12 +47,13 @@ struct pbc_queue_node * scheduler_unblock_process(scheduler_t *scheduler) {
     return item;
 }
 
-void scheduler_process_init(scheduler_t *scheduler, int parent_pid, int priority, program_t *program, int state, int program_counter,
-                            int time) {
-    ZF_LOGI("Initializing process: parent_pid=%d, priority=%d, state=%d program_counter=%d, time=%d", parent_pid, priority, state, program_counter, time);
+void scheduler_process_init(scheduler_t *scheduler, int parent_pid, int priority, program_t *program,
+                            int state, int program_counter, int time) {
+    ZF_LOGI("Initializing process: parent_pid=%d, priority=%d, state=%d program_counter=%d, time=%d",
+            parent_pid, priority, state, program_counter, time);
     pcb_t *pcb = pcb_create(parent_pid, priority, program, state, program_counter, time);
 
-    struct pbc_queue_node *el = (struct pbc_queue_node *) malloc(sizeof(struct pbc_queue_node));
+    struct pcb_queue_node *el = (struct pcb_queue_node *) malloc(sizeof(struct pcb_queue_node));
     if (!el) {
         perror("malloc");
         exit(1);
@@ -65,10 +66,9 @@ void scheduler_process_init(scheduler_t *scheduler, int parent_pid, int priority
     scheduler_enqueue_process(scheduler, el);
 }
 
-void scheduler_process_free(scheduler_t *scheduler, struct pbc_queue_node *el) {
+void scheduler_process_free(scheduler_t *scheduler, struct pcb_queue_node *el) {
     ZF_LOGI("Freeing process: pid=%d, priority=%d", el->value->process_id, el->value->priority);
-    // TODO: change this to to a doubly linked TAILQ for O(1) removal
-    STAILQ_REMOVE(&scheduler->pcb_table, el, pbc_queue_node, entries);
+    STAILQ_REMOVE(&scheduler->pcb_table, el, pcb_queue_node, entries);
     pcb_free(el->value);
     free(el);
 }

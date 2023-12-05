@@ -51,7 +51,8 @@
 #define INSTRUCTION_LOAD 'R'
 
 /**
- * Used to minimize the number of arguments passed to functions.
+ * Used to minimize the number of
+ * arguments passed to functions.
  */
 typedef struct  {
     cpu_t cpu;
@@ -59,7 +60,7 @@ typedef struct  {
     int time;
     int total_turnaround;
     int processes_ended;
-    struct pbc_queue_node *current_process;
+    struct pcb_queue_node *current_process;
     pthread_mutex_t reporter_mutex;
 } manager_t;
 

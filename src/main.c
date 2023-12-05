@@ -35,13 +35,16 @@ int fork_and_pipe() {
             write(fd[1], line, strlen(line));
             sleep(1);
         }
+
+        close(fd[1]);
+        wait(NULL);
     }
 
     return 0;
 }
 
 int main(int argc, char **argv) {
-    chdir("../tests/03");
+    chdir("../tests/02");
     freopen("./cmds", "r", stdin);
 
     #if FEATURE_PROCESS_FOR_MANAGER

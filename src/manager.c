@@ -24,7 +24,7 @@ manager_handel_interrupt_f *interrupt_vector_table[] = {
 
 void print_system_status(manager_t *manager);
 
-void check_time_slice(cpu_t *cpu, struct pbc_queue_node **current_pcb, scheduler_t *scheduler){//added - R
+void check_time_slice(cpu_t *cpu, struct pcb_queue_node **current_pcb, scheduler_t *scheduler){//added - R
     assert(cpu->used_time_slices <= cpu->time_slice);
     assert(PRIO_LEVELS > (*current_pcb)->value->priority);
 
@@ -35,11 +35,12 @@ void check_time_slice(cpu_t *cpu, struct pbc_queue_node **current_pcb, scheduler
         }
 
         scheduler_enqueue_process(scheduler, (*current_pcb));
-        struct pbc_queue_node* pcb_el = scheduler_dequeue_process(scheduler);
+        struct pcb_queue_node* pcb_el = scheduler_dequeue_process(scheduler);
         if (pcb_el == *current_pcb) { // if not context switch, reset time slice
             // increase allowed time slices when not context switching
-            cpu->time_slice += 1 << (*current_pcb)->value->priority;
-            ZF_LOGI("Refreshing time slice: pid=%d, priority=%d, quantum=%d", (*current_pcb)->value->process_id, (*current_pcb)->value->priority, cpu->time_slice);
+            int new_quantum = 1 << (*current_pcb)->value->priority;
+            cpu->time_slice += new_quantum;
+            ZF_LOGI("Refreshing time slice: pid=%d, priority=%d, quantum=%d", (*current_pcb)->value->process_id, (*current_pcb)->value->priority, new_quantum);
         } else { // only switch if there is another process ready to run
             context_switch_cpu_to_pcb(cpu, (*current_pcb)->value);
             context_switch_pcb_to_cpu(cpu, pcb_el->value);
@@ -69,10 +70,12 @@ void execute_program_instruction(manager_t *manager) {
             cpu_set_interrupt(&manager->cpu, INTERRUPT_TERMINATE, 0);
             return;
         case INSTRUCTION_FORK:
-            cpu_set_interrupt(&manager->cpu, INTERRUPT_FORK, program_read_int_param_from_line(instruction));
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_FORK,
+                              program_read_int_param_from_line(instruction));
             return;
         case INSTRUCTION_LOAD:
-            cpu_set_interrupt(&manager->cpu, INTERRUPT_LOAD, (size_t) program_read_str_param_from_line(instruction));
+            cpu_set_interrupt(&manager->cpu, INTERRUPT_LOAD,
+                              (size_t) program_read_str_param_from_line(instruction));
             return;
     }
 }
@@ -95,40 +98,39 @@ void manger_handel_command_process_time_slice(manager_t *manager) {
 
 void manger_run() {
     manager_t manager;
+    int running = 1;
+    char line[LINE_BUFFER_SIZE];
+
     manager_init(&manager);
 
     scheduler_init(&manager.scheduler);
-    scheduler_process_init(&manager.scheduler, 0, 0, program_get("init"), 0, 0, manager.time);
+    scheduler_process_init(
+        &manager.scheduler,
+        0,
+        0,
+        program_get("init"),
+        0,
+        0,
+        manager.time
+    );
 
     manager.current_process = scheduler_dequeue_process(&manager.scheduler);
     context_switch_pcb_to_cpu(&manager.cpu, manager.current_process->value);
 
-    char *line;
-    size_t len = 32;
-    int running = 1;
-
-    line = (char *)malloc(len * sizeof(char));
-    if( line == NULL)
-    {
-        perror("Unable to allocate buffer");
-        exit(1);
-    }
-
-    while (running && !feof(stdin)) {
+    while (running && fgets(line, LINE_BUFFER_SIZE, stdin)) {
         printf("$ ");
-        getline(&line, &len, stdin);
         ZF_LOGI("System time: %d", manager.time);
         switch (line[0]) {
-            case 'Q': // end of one unit of time added Turnaround time and processed ended
+            case 'Q':
                 manger_handel_command_process_time_slice(&manager);
                 break;
-            case 'U': // unblock the first simulated process in blocked queue
+            case 'U':
                 manager_handel_command_unblock_process(&manager.scheduler);
                 break;
-            case 'P': // print the current state of the system
+            case 'P':
                 manager_handel_command_print_system_state(&manager);
                 break;
-            case 'T': // print the average total_turnaround time and terminate the system
+            case 'T':
                 running = manager_handel_command_terminate(&manager);
                 break;
             default:
@@ -136,15 +138,13 @@ void manger_run() {
                 break;
         }
     }
-
-    free(line);
 }
 
 /**
  * On receiving a T command, the process
  * manager first spawns a reporter process and then terminates after termination of the
  * reporter process. The process manager ensures that no more than one reporter process is
- * running at any moment.
+ * running at any moment. It should also print average turnaround time of all processes.
  * @param manager
  */
 int manager_handel_command_terminate(manager_t *manager) {
@@ -163,7 +163,7 @@ int manager_handel_command_terminate(manager_t *manager) {
         print_system_status(manager);
     #endif
 
-    printf("Average Total Turnaround Time: %.2f", ((float)manager->total_turnaround / (float)manager->processes_ended)); // calculate average time
+    printf("Average Turnaround Time: %.2f", ((float)manager->total_turnaround / (float)manager->processes_ended)); // calculate average time
 
     return 0;
 }
@@ -197,7 +197,7 @@ void manager_init(manager_t *manager) {
 
 void manager_handel_command_unblock_process(scheduler_t *scheduler) {
     ZF_LOGI("Processing command \"U\".");
-    struct pbc_queue_node *unblocked_pcb_el = NULL;
+    struct pcb_queue_node *unblocked_pcb_el = NULL;
 
     unblocked_pcb_el = scheduler_unblock_process(scheduler);
     if (unblocked_pcb_el != NULL) {
@@ -226,7 +226,9 @@ void manager_handel_interrupt(manager_t *manager) {
 
     // on none, fork, load
     if (manager->cpu.interrupt_id == INTERRUPT_NONE || manager->cpu.interrupt_id > 2) {
-        check_time_slice(&manager->cpu, &manager->current_process, &manager->scheduler); //checking for preempting of program
+        check_time_slice(
+                &manager->cpu,
+                &manager->current_process, &manager->scheduler); //checking for preempting of program
     }
 }
 
@@ -238,9 +240,7 @@ void manager_handel_interrupt_terminate(manager_t *manager) {
 
     scheduler_process_free(&manager->scheduler, manager->current_process);
     manager->current_process = scheduler_dequeue_process(&manager->scheduler);
-    if (manager->current_process == NULL) {
-        manager->current_process = NULL;
-    } else {
+    if (manager->current_process != NULL) {
         context_switch_pcb_to_cpu(&manager->cpu, manager->current_process->value);
     }
 }
@@ -279,10 +279,12 @@ void manager_handel_interrupt_fork(manager_t *manager) {
     manager->cpu.program_counter += (int) manager->cpu.interrupt_argument;
 
     if (manager->cpu.program_counter >= manager->cpu.program->count) {
-        fprintf(stderr, "Invalid fork (ln: %d): program counter overflow.\n", manager->cpu.program_counter - (int) manager->cpu.interrupt_argument);
+        fprintf(stderr, "Invalid fork (ln: %d): program counter overflow.\n",
+                manager->cpu.program_counter - (int) manager->cpu.interrupt_argument);
         exit(1);
     }
 }
+
 void manager_handel_interrupt_load(manager_t *manager) {
     program_t *temp_program;
     ZF_LOGI("Loading another process from \"%s\".", (char *) manager->cpu.interrupt_argument);
@@ -323,13 +325,13 @@ void print_system_status(manager_t *manager) {
     printf(  "+=================================================================+\n");
     printf(  "| BLOCKED PROCESSES                                               |\n");
     printf(  "+=================================================================+\n");
-    pbc_queue_print(&manager->scheduler.blocked_queue_head, 1);
+    pcb_queue_print(&manager->scheduler.blocked_queue_head, 1);
 
     for (int priority = 0; priority < PRIO_LEVELS; ++priority) {
         printf(  "+=================================================================+\n");
         printf(  "| Priority Queue %d                                                |\n", priority);
         printf(  "+=================================================================+\n");
-        pbc_queue_print(&manager->scheduler.priority_queue_heads[priority], 0);
+        pcb_queue_print(&manager->scheduler.priority_queue_heads[priority], 0);
     }
     printf("*******************************************************************\n");
     #if FEATURE_THREAD_FOR_PRINT_STATE

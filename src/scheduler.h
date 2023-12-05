@@ -14,9 +14,9 @@
  * It contains a queue for each priority level and a blocked queue.
  */
 typedef struct {
-    struct pbc_queue_head pcb_table;
-    struct pbc_nested_queue_head priority_queue_heads[PRIO_LEVELS];
-    struct pbc_nested_queue_head blocked_queue_head;
+    struct pcb_queue_head pcb_table;
+    struct pcb_nested_queue_head priority_queue_heads[PRIO_LEVELS];
+    struct pcb_nested_queue_head blocked_queue_head;
 } scheduler_t;
 
 /**
@@ -43,14 +43,14 @@ void scheduler_process_init(scheduler_t *scheduler, int parent_pid, int priority
  * @param scheduler The scheduler to preform the operation on.
  * @param scheduled_pcb The process to free.
  */
-void scheduler_process_free(scheduler_t *scheduler, struct pbc_queue_node *scheduled_pcb);
+void scheduler_process_free(scheduler_t *scheduler, struct pcb_queue_node *scheduled_pcb);
 
 /**
  * Enqueues a process into the scheduler queues.
  * @param scheduler The scheduler to preform the operation on.
  * @param pcb_el The process to enqueue.
  */
-void scheduler_enqueue_process(scheduler_t *scheduler, struct pbc_queue_node * pcb_el);
+void scheduler_enqueue_process(scheduler_t *scheduler, struct pcb_queue_node * pcb_el);
 
 /**
  * Dequeues a process from the scheduler queues. It first checks
@@ -59,20 +59,20 @@ void scheduler_enqueue_process(scheduler_t *scheduler, struct pbc_queue_node * p
  * @param scheduler The scheduler to preform the operation on.
  * @return The process that was dequeued.
  */
-struct pbc_queue_node * scheduler_dequeue_process(scheduler_t *scheduler);
+struct pcb_queue_node * scheduler_dequeue_process(scheduler_t *scheduler);
 
 /**
  * Puts a process into the blocked queue.
  * @param scheduler The scheduler to preform the operation on.
  * @param pcb_el The process to block.
  */
-void scheduler_block_process(scheduler_t *scheduler, struct pbc_queue_node *pcb_el);
+void scheduler_block_process(scheduler_t *scheduler, struct pcb_queue_node *pcb_el);
 
 /**
  * Removes a process from the blocked queue.
  * @param scheduler The scheduler to preform the operation on.
  * @return The process that was unblocked.
  */
-struct pbc_queue_node * scheduler_unblock_process(scheduler_t *scheduler);
+struct pcb_queue_node * scheduler_unblock_process(scheduler_t *scheduler);
 
 #endif //SJSU_CS_149_SCHEDULER_H
