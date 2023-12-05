@@ -17,9 +17,3 @@ add_executable(SJSU_CS_149
         src/scheduler.h
         libs/zf_log/zf_log.c
 )
-
-#target_link_libraries(SJSU_CS_149 zf_log)
-
-#add_subdirectory(
-#        zf_log
-#)

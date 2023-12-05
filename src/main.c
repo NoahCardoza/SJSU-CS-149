@@ -43,8 +43,12 @@ int fork_and_pipe() {
 }
 
 int main(int argc, char **argv) {
-    chdir("../tests/02");
-    freopen("./cmds", "r", stdin);
+    if (argc > 1) {
+        chdir(argv[1]);
+        if (argc > 2) {
+            freopen(argv[2], "r", stdin);
+        }
+    }
 
     #if FEATURE_PROCESS_FOR_MANAGER
         fork_and_pipe();

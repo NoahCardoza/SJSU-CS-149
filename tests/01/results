@@ -19,3 +19,7 @@ n =	1400
 	Parent end.
 		Print state
 		Proc end.
+
+Expected results:
+- total time to be 16
+- average turnaround time to be 11.5

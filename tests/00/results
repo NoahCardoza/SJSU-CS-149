@@ -16,3 +16,8 @@ n =	1000
 		Print state
 		76
 		Proc end.
+
+
+Expected results:
+- total time to be 15
+- average turnaround time to be 11
